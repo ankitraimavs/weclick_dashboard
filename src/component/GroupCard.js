@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 export default function GroupCard({ group }) {
   const [expanded, setExpanded] = useState(false);
-  const [modalImage, setModalImage] = useState(null); // Image for modal
+  const [modalImage, setModalImage] = useState(null);
   const createdAt = new Date(group.created_at).toLocaleString();
 
   const cardStyle = {
@@ -71,13 +71,16 @@ export default function GroupCard({ group }) {
     borderTop: '1px solid rgba(71,85,105,0.2)',
     background: 'rgba(15,23,42,0.3)',
   };
+
   const dividerStyle = { height: '1px', background: 'rgba(71,85,105,0.2)', margin: '16px 0' };
+
   const imageGridStyle = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(80px, auto))',
     gap: '8px',
     justifyContent: 'start',
   };
+
   const imageItemStyle = {
     borderRadius: '6px',
     overflow: 'hidden',
@@ -156,11 +159,10 @@ export default function GroupCard({ group }) {
     </div>
   );
 
-  // Get the prompt from the first output image (if any)
-  const groupPrompt = group.output_images.length > 0 ? group.output_images[0].prompt : null;
-
-  
-  
+  // Find prompt and enhanced prompt
+  const groupPrompt = group.output_images.find((img) => img.prompt)?.prompt || null;
+  const enhancedGroupPrompt =
+    group.output_images.find((img) => img.enhanced_prompt)?.enhanced_prompt || null;
 
   return (
     <>
@@ -180,8 +182,9 @@ export default function GroupCard({ group }) {
             </div>
           </div>
 
-          {/* Show prompt at top */}
+          {/* Show prompts only once per group */}
           {groupPrompt && <div style={promptStyle}>Prompt: {groupPrompt}</div>}
+          {enhancedGroupPrompt && <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>}
         </div>
 
         <div style={contentStyle}>
