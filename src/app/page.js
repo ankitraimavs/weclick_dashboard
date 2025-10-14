@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import GroupCard from '../component/groupcard';
+import GroupCard from '../component/GroupCard';
 
 export default function DashboardPage() {
   const [groups, setGroups] = useState([]);
