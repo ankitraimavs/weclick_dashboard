@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { ChevronDown, ChevronUp, X, Download } from 'lucide-react';
 
 export default function GroupCard({ group }) {
   const [expanded, setExpanded] = useState(false);
@@ -7,23 +8,24 @@ export default function GroupCard({ group }) {
   const createdAt = new Date(group.created_at).toLocaleString();
 
   const cardStyle = {
-    background: 'rgba(30,41,59,0.85)',
-    border: '1px solid rgba(71,85,105,0.3)',
-    borderRadius: '12px',
+    background: 'rgba(17, 25, 40, 0.7)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '16px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+    margin: '20px auto',
     overflow: 'hidden',
-    margin: '16px auto',
     maxWidth: '95%',
-    fontFamily: 'Arial, sans-serif',
-    transition: 'box-shadow 0.3s ease',
+    color: '#f8fafc',
+    transition: 'transform 0.2s ease, box-shadow 0.3s ease',
     cursor: 'pointer',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
   };
 
   const headerStyle = {
     display: 'flex',
     flexDirection: 'column',
-    padding: '16px',
-    background: 'rgba(30,41,59,0.95)',
+    padding: '20px',
+    background: 'rgba(30,41,59,0.9)',
     gap: '12px',
   };
 
@@ -32,75 +34,75 @@ export default function GroupCard({ group }) {
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: '8px',
+    gap: '10px',
   };
 
-  const titleStyle = { fontSize: '16px', fontWeight: 600, color: '#f1f5f9' };
+  const titleStyle = { fontSize: '18px', fontWeight: 600, color: '#f8fafc' };
   const metaStyle = {
-    fontSize: '12px',
+    fontSize: '13px',
     color: '#94a3b8',
     display: 'flex',
     flexDirection: 'column',
     gap: '2px',
-    marginTop: '4px',
   };
   const statsStyle = {
-    fontSize: '12px',
+    fontSize: '13px',
     color: '#cbd5e1',
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '12px',
-    minWidth: '120px',
+    gap: '14px',
     justifyContent: 'flex-end',
+    alignItems: 'center',
   };
 
   const promptStyle = {
-    fontSize: '12px',
-    color: '#94a3b8',
-    background: 'rgba(15,23,42,0.3)',
-    padding: '8px',
-    borderRadius: '6px',
+    fontSize: '13px',
+    color: '#e2e8f0',
+    background: 'rgba(255,255,255,0.05)',
+    padding: '10px 14px',
+    borderRadius: '10px',
     wordBreak: 'break-word',
+    border: '1px solid rgba(255,255,255,0.05)',
   };
 
   const contentStyle = {
     maxHeight: expanded ? '1000px' : '0',
     overflow: 'hidden',
-    transition: 'max-height 0.4s ease, padding 0.4s ease',
-    padding: expanded ? '16px' : '0 16px',
-    borderTop: '1px solid rgba(71,85,105,0.2)',
-    background: 'rgba(15,23,42,0.3)',
+    transition: 'max-height 0.5s ease, padding 0.4s ease',
+    padding: expanded ? '20px' : '0 20px',
+    background: 'rgba(15,23,42,0.4)',
   };
 
-  const dividerStyle = { height: '1px', background: 'rgba(71,85,105,0.2)', margin: '16px 0' };
+  const dividerStyle = {
+    height: '1px',
+    background: 'rgba(255,255,255,0.08)',
+    margin: '20px 0',
+  };
 
   const imageGridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(80px, auto))',
-    gap: '8px',
-    justifyContent: 'start',
+display:'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'left',
+    gap: '14px',
   };
 
   const imageItemStyle = {
-    borderRadius: '6px',
+    borderRadius: '10px',
     overflow: 'hidden',
-    border: '1px solid rgba(100,116,139,0.3)',
-    cursor: 'pointer',
-    display: 'inline-flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '2px',
-    background: 'rgba(15,23,42,0.2)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.05)',
+    backdropFilter: 'blur(6px)',
+    transition: 'transform 0.2s ease',
   };
 
   const renderImages = (title, images) => (
-    <div style={{ marginBottom: '16px' }}>
+    <div style={{ marginBottom: '20px' }}>
       <p
         style={{
-          fontSize: '13px',
+          fontSize: '14px',
           fontWeight: 600,
-          color: '#cbd5e1',
-          marginBottom: '6px',
+          color: '#e2e8f0',
+          marginBottom: '8px',
           display: 'flex',
           justifyContent: 'space-between',
         }}
@@ -112,11 +114,11 @@ export default function GroupCard({ group }) {
       {images.length === 0 ? (
         <div
           style={{
-            fontSize: '12px',
+            fontSize: '13px',
             color: '#64748b',
-            padding: '8px',
-            background: 'rgba(15,23,42,0.2)',
-            borderRadius: '6px',
+            padding: '10px',
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: '10px',
             textAlign: 'center',
           }}
         >
@@ -125,28 +127,38 @@ export default function GroupCard({ group }) {
       ) : (
         <div style={imageGridStyle}>
           {images.map((img, idx) => (
-            <div key={idx} style={imageItemStyle} onClick={() => img.url && setModalImage(img.url)}>
+            <div
+              key={idx}
+              style={imageItemStyle}
+              onClick={() => img.url && setModalImage(img.url)}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            >
               {img.url ? (
                 <img
                   src={img.url}
                   alt={title}
-                  style={{ maxHeight: '80px', maxWidth: '80px', objectFit: 'contain' }}
+                  style={{
+                    // width: '100%',
+                    height: '120px',
+                    objectFit: 'cover',
+                    borderRadius: '10px',
+                  }}
                   onError={(e) => {
                     e.currentTarget.src = '';
-                    e.currentTarget.parentElement.innerHTML = `<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;background:rgba(127,29,29,0.2);color:#b91c1c;font-size:12px;">⚠️ Unavailable</div>`;
+                    e.currentTarget.parentElement.innerHTML =
+                      `<div style="height:120px;display:flex;align-items:center;justify-content:center;background:rgba(127,29,29,0.2);color:#f87171;font-size:13px;">⚠️ Unavailable</div>`;
                   }}
                 />
               ) : (
                 <div
                   style={{
-                    width: '80px',
-                    height: '80px',
+                    height: '120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
-                    color: '#64748b',
-                    textAlign: 'center',
+                    fontSize: '13px',
+                    color: '#94a3b8',
                   }}
                 >
                   {img.status === 'error' ? '⚠️ Error' : '⏳ Processing'}
@@ -159,7 +171,6 @@ export default function GroupCard({ group }) {
     </div>
   );
 
-  // Find prompt and enhanced prompt
   const groupPrompt = group.output_images.find((img) => img.prompt)?.prompt || null;
   const enhancedGroupPrompt =
     group.output_images.find((img) => img.enhanced_prompt)?.enhanced_prompt || null;
@@ -172,19 +183,28 @@ export default function GroupCard({ group }) {
             <div>
               <div style={titleStyle}>Group #{group.group_id}</div>
               <div style={metaStyle}>
-                <span>Created at: {createdAt}</span>
-                <span>Created by: {group.created_by}</span>
+                <span>🕒 {createdAt}</span>
+                <span>👤 {group.created_by}</span>
               </div>
             </div>
-            <div style={statsStyle}>
-              <span>Inputs: {group.input_count}</span>
-              <span>Outputs: {group.output_count}</span>
+
+            <div style={{ display: 'flex', alignItems: 'left', gap: '12px' }}>
+              <div style={statsStyle}>
+                <span>Inputs: {group.input_count}</span>
+                <span>Outputs: {group.output_count}</span>
+              </div>
+              {expanded ? (
+                <ChevronUp size={20} color="#94a3b8" />
+              ) : (
+                <ChevronDown size={20} color="#94a3b8" />
+              )}
             </div>
           </div>
 
-          {/* Show prompts only once per group */}
           {groupPrompt && <div style={promptStyle}>Prompt: {groupPrompt}</div>}
-          {enhancedGroupPrompt && <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>}
+          {enhancedGroupPrompt && (
+            <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>
+          )}
         </div>
 
         <div style={contentStyle}>
@@ -194,7 +214,7 @@ export default function GroupCard({ group }) {
         </div>
       </div>
 
-      {/* Modal for full image view */}
+      {/* Modal with glass style */}
       {modalImage && (
         <div
           style={{
@@ -203,43 +223,77 @@ export default function GroupCard({ group }) {
             left: 0,
             width: '100vw',
             height: '100vh',
-            background: 'rgba(0,0,0,0.8)',
+            background: 'rgba(0,0,0,0.85)',
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 9999,
+            animation: 'fadeIn 0.3s ease',
           }}
           onClick={() => setModalImage(null)}
         >
           <div
             style={{
               position: 'relative',
-              maxWidth: '90%',
-              maxHeight: '90%',
+              width: '90%',
+              height: '90%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderRadius: '16px',
+              overflow: 'hidden',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <img
               src={modalImage}
               alt="Full view"
-              style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '8px', objectFit: 'contain' }}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              }}
             />
+            <button
+              onClick={() => setModalImage(null)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                borderRadius: '50%',
+                padding: '10px',
+                cursor: 'pointer',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              <X size={20} color="#fff" />
+            </button>
             <a
               href={modalImage}
               download
               style={{
                 position: 'absolute',
-                bottom: '8px',
-                right: '8px',
-                background: '#2563eb',
+                bottom: '20px',
+                right: '20px',
+                background: 'rgba(37,99,235,0.8)',
                 color: '#fff',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                fontSize: '14px',
                 textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backdropFilter: 'blur(6px)',
               }}
             >
-              ⬇️ Download
+              <Download size={16} />
+              Download
             </a>
           </div>
         </div>
