@@ -8,7 +8,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState('prompt'); // 'prompt' or 'group_id'
+  const [searchType, setSearchType] = useState('user_email');
 
   const API_BASE = 'https://weclick.dev.api.yonderwonder.ai';
 
@@ -41,6 +41,8 @@ export default function DashboardPage() {
       return groupPrompt.toLowerCase().includes(searchQuery.toLowerCase());
     } else if (searchType === 'group_id') {
       return group.group_id.toString().includes(searchQuery);
+    }else if (searchType === 'user_email') {
+      return group.user_email.toString().includes(searchQuery);
     }
     return true;
   });
@@ -54,7 +56,7 @@ export default function DashboardPage() {
     );
 
   if (error)
-    return <div className="error-banner">⚠️ Error loading dashboard: {error}</div>;
+    return <div className="error-banner"> Error loading dashboard: {error}</div>;
 
   if (groups.length === 0)
     return (
@@ -64,13 +66,16 @@ export default function DashboardPage() {
     );
 
 return (
-  <div className="container" style={{ width: '100%', padding: '16px' }}>
+  <div className="container" style={{ width: '100%', padding: '16px', justifyContent: 'center',
+        alignItems: 'center', }}>
     <div
       style={{
         display: 'flex',
         gap: '8px',
         marginBottom: '24px',
         flexWrap: 'wrap',
+        width: '90%',
+        maxWidth: '600px',
       }}
     >
       <input
@@ -103,6 +108,7 @@ return (
       >
         <option value="prompt">Prompt</option>
         <option value="group_id">Group ID</option>
+         <option value="user_email">Email</option>
       </select>
     </div>
 

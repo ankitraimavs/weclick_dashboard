@@ -63,6 +63,7 @@ export default function GroupCard({ group }) {
     borderRadius: '10px',
     wordBreak: 'break-word',
     border: '1px solid rgba(255,255,255,0.05)',
+    marginBottom:'20px',
   };
 
   const contentStyle = {
@@ -139,7 +140,6 @@ display:'flex',
                   src={img.url}
                   alt={title}
                   style={{
-                    // width: '100%',
                     height: '120px',
                     objectFit: 'cover',
                     borderRadius: '10px',
@@ -183,8 +183,10 @@ display:'flex',
             <div>
               <div style={titleStyle}>Group #{group.group_id}</div>
               <div style={metaStyle}>
-                <span>🕒 {createdAt}</span>
-                <span>👤 {group.created_by}</span>
+                <span>Email: {group.user_email}</span>
+                <span>Time: {createdAt}</span>
+                <span>User Id: {group.created_by}</span>
+            
               </div>
             </div>
 
@@ -202,19 +204,19 @@ display:'flex',
           </div>
 
           {groupPrompt && <div style={promptStyle}>Prompt: {groupPrompt}</div>}
-          {enhancedGroupPrompt && (
-            <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>
-          )}
+    
         </div>
 
         <div style={contentStyle}>
+            {enhancedGroupPrompt && (
+            <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>
+          )}
           {renderImages('Input Images', group.input_images)}
           {group.output_images.length > 0 && <div style={dividerStyle}></div>}
           {renderImages('Generated Images', group.output_images)}
         </div>
       </div>
 
-      {/* Modal with glass style */}
       {modalImage && (
         <div
           style={{
