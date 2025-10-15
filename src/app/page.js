@@ -66,16 +66,11 @@ export default function DashboardPage() {
     );
 
 return (
-  <div className="container" style={{ width: '100%', padding: '16px', justifyContent: 'center',
+  <div className="container" style={{ width: '100%', padding: '16px', justifyContent: 'end',
         alignItems: 'center', }}>
     <div
       style={{
-        display: 'flex',
-        gap: '8px',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        width: '90%',
-        maxWidth: '600px',
+       display: 'flex', gap: '8px', maxWidth: '600px', width: '100%', marginLeft:'30px'
       }}
     >
       <input
