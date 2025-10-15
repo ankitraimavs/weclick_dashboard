@@ -13,7 +13,7 @@ export default function GroupCard({ group }) {
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '16px',
     boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-    margin: '20px auto',
+    margin: '5px auto',
     overflow: 'hidden',
     maxWidth: '95%',
     color: '#f8fafc',
