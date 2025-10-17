@@ -12,6 +12,7 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyAOijGPli7nfH38drf72jiENjx1cHjHmNE",
   authDomain: "dashboard-8fb4e.firebaseapp.com",
@@ -19,7 +20,7 @@ const firebaseConfig = {
   storageBucket: "dashboard-8fb4e.firebasestorage.app",
   messagingSenderId: "1046394550689",
   appId: "1:1046394550689:web:27c5186c6060a78c6df3e0",
-  measurementId: "G-K1XFBK3BCG"
+  measurementId: "G-K1XFBK3BCG",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -33,11 +34,25 @@ export default function DashboardPage() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState('user_email');
+  const [env, setEnv] = useState('dev'); // Current environment
+  const [shifting, setShifting] = useState(false); // Env switching state
 
-  const API_BASE = 'https://weclick.dev.api.yonderwonder.ai';
   const allowedDomain = 'yonderwonder.ai';
 
-  // Persist login across refreshes
+  // --- Environment Handling (Persist in localStorage) ---
+  useEffect(() => {
+    const savedEnv = localStorage.getItem('dashboard_env');
+    if (savedEnv) {
+      setEnv(savedEnv);
+    } else {
+      localStorage.setItem('dashboard_env', 'dev');
+      setEnv('dev');
+    }
+  }, []);
+
+  const API_BASE = 'https://weclick.dev.api.yonderwonder.ai';
+
+  // --- Firebase Auth Persistence ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -52,10 +67,10 @@ export default function DashboardPage() {
         setUser(null);
       }
     });
-
     return () => unsubscribe();
-  }, []);
+  }, [env]); // reload data when env changes
 
+  // --- Authentication Handlers ---
   async function handleLogin() {
     try {
       const result = await signInWithPopup(auth, provider);
@@ -82,6 +97,7 @@ export default function DashboardPage() {
     setGroups([]);
   }
 
+  // --- Data Fetch ---
   async function loadData() {
     setLoading(true);
     setError(null);
@@ -97,6 +113,39 @@ export default function DashboardPage() {
     }
   }
 
+  // --- Environment Toggle (with 8-sec full loading state) ---
+  async function handleEnvToggle() {
+    const newEnv = env === 'dev' ? 'prod' : 'dev';
+    setShifting(true);
+    setLoading(true);
+    setError(null);
+
+    try {
+      await fetch(`${API_BASE}/dashboard/switch-env`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ env_name: newEnv }),
+      });
+
+      // Save new environment
+      localStorage.setItem('dashboard_env', newEnv);
+      setEnv(newEnv);
+
+      // Keep full-screen loader visible for 8 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 8000);
+    } catch (err) {
+      console.error('Failed to switch environment:', err);
+      // Still show loading until reload to prevent flicker
+      setTimeout(() => {
+        alert('Environment switch failed. Try again.');
+        window.location.reload();
+      }, 8000);
+    }
+  }
+
+  // --- Filtering Logic ---
   const filteredGroups = groups.filter((group) => {
     if (searchType === 'prompt') {
       const groupPrompt =
@@ -110,8 +159,8 @@ export default function DashboardPage() {
     return true;
   });
 
-  // ---- Loading ----
-  if (loading) {
+  // --- Loading or Switching State ---
+  if (loading || shifting) {
     return (
       <div
         style={{
@@ -122,26 +171,29 @@ export default function DashboardPage() {
           background: 'linear-gradient(to bottom right, #0f172a, #1e293b)',
           color: '#d1d5db',
           fontSize: '18px',
+          flexDirection: 'column',
         }}
       >
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           style={{
-            width: '32px',
-            height: '32px',
+            width: '36px',
+            height: '36px',
             border: '4px solid #3b82f6',
             borderTopColor: 'transparent',
             borderRadius: '50%',
-            marginRight: '12px',
+            marginBottom: '16px',
           }}
         />
-        Loading dashboard...
+        {shifting
+          ? `Switching environment...`
+          : `Loading dashboard (${env.toUpperCase()} environment)...`}
       </div>
     );
   }
 
-  // ---- Error ----
+  // --- Error State ---
   if (error) {
     return (
       <div style={{ textAlign: 'center', color: '#f87171', marginTop: '40px' }}>
@@ -150,6 +202,7 @@ export default function DashboardPage() {
     );
   }
 
+  // --- Main UI ---
   return (
     <div
       style={{
@@ -164,7 +217,7 @@ export default function DashboardPage() {
         overflowX: 'hidden',
       }}
     >
-      {/* Search + User Info */}
+      {/* Search + Env Toggle + User Info */}
       {user && (
         <div
           style={{
@@ -172,12 +225,12 @@ export default function DashboardPage() {
             flexDirection: 'column',
             gap: '12px',
             marginBottom: '32px',
-            maxWidth: '640px',
-            marginLeft:'25px'
+            maxWidth: '800px',
+            marginLeft: '25px',
           }}
         >
-          {/* Search Inputs */}
-          <div style={{ display: 'flex', flexDirection: 'row', gap: '12px' }}>
+          {/* Search + Toggle Row */}
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', alignItems: 'center' }}>
             <select
               value={searchType}
               onChange={(e) => setSearchType(e.target.value)}
@@ -209,9 +262,28 @@ export default function DashboardPage() {
                 color: 'white',
                 fontSize: '14px',
                 outline: 'none',
-                margin: "0px 20px"
               }}
             />
+
+            {/* Environment Toggle */}
+            <button
+              onClick={handleEnvToggle}
+              disabled={shifting}
+              style={{
+                padding: '12px 16px',
+                borderRadius: '12px',
+                backgroundColor: shifting ? '#64748b' : '#3b82f6',
+                color: 'white',
+                fontWeight: 500,
+                cursor: shifting ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                transition: 'all 0.2s',
+              }}
+            >
+              {shifting
+                ? `Switching...`
+                : `Current: ${env.toUpperCase()} | Switch`}
+            </button>
           </div>
 
           {/* User Info & Logout */}
@@ -270,10 +342,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 🔥 LOGIN MODAL */}
+      {/* 🔐 LOGIN MODAL */}
       {!user && (
         <>
-          {/* Dimmed Background */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.6 }}
@@ -285,8 +356,6 @@ export default function DashboardPage() {
               zIndex: 40,
             }}
           />
-
-          {/* Centered Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -314,7 +383,6 @@ export default function DashboardPage() {
                 margin: '10px auto',
               }}
             >
-              {/* Logo + Title */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -350,8 +418,6 @@ export default function DashboardPage() {
                   Sign in using your company Google account
                 </p>
               </motion.div>
-
-              {/* Google Sign-In Button */}
               <button
                 onClick={handleLogin}
                 style={{
@@ -380,8 +446,6 @@ export default function DashboardPage() {
                 />
                 <span>Continue with Google</span>
               </button>
-
-              {/* Domain Restriction Note */}
               <p style={{ color: '#6b7280', fontSize: '12px', marginTop: '20px' }}>
                 Access restricted to <span style={{ color: '#60a5fa' }}>@{allowedDomain}</span> users
               </p>
