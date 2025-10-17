@@ -5,7 +5,17 @@ import { ChevronDown, ChevronUp, X, Download } from 'lucide-react';
 export default function GroupCard({ group }) {
   const [expanded, setExpanded] = useState(false);
   const [modalImage, setModalImage] = useState(null);
-  const createdAt = new Date(group.created_at).toLocaleString();
+ const createdAt = new Intl.DateTimeFormat('en-IN', {
+  timeZone: 'Asia/Kolkata',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+}).format(new Date(group.created_at + 'Z'));
+
 
   const cardStyle = {
     background: 'rgba(17, 25, 40, 0.7)',
@@ -184,7 +194,7 @@ display:'flex',
               <div style={titleStyle}>Group #{group.group_id}</div>
               <div style={metaStyle}>
                 <span>Email: {group.user_email}</span>
-                <span>Time: {createdAt}</span>
+                <span>Time (IST): {createdAt}</span>
                 <span>User Id: {group.created_by}</span>
             
               </div>
