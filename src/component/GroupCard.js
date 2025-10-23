@@ -1,22 +1,43 @@
 'use client';
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, X, Download } from 'lucide-react';
+import { ChevronDown, ChevronUp, X, Download, Trash2 } from 'lucide-react';
 
-export default function GroupCard({ group }) {
+export default function GroupCard({ group, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [modalImage, setModalImage] = useState(null);
- const createdAt = new Intl.DateTimeFormat('en-IN', {
-  timeZone: 'Asia/Kolkata',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-}).format(new Date(group.created_at + 'Z'));
+  const [isDeleting, setIsDeleting] = useState(false);
 
+    const API_BASE = 'https://weclick.dev.api.yonderwonder.ai';
 
+  const createdAt = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date(group.created_at + 'Z'));
+
+  // 🧹 Delete group handler
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete Group #${group.group_id}?`)) return;
+
+    try {
+      setIsDeleting(true);
+      const res = await fetch(`${API_BASE}/dashboard/api/groups/${group.group_id}/input-images`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete group');
+      if (onDelete) onDelete(group.group_id); // Parent callback to remove from UI
+    } catch (err) {
+      alert('❌ Error deleting group: ' + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // 🌌 Glassmorphic styles
   const cardStyle = {
     background: 'rgba(17, 25, 40, 0.7)',
     backdropFilter: 'blur(10px)',
@@ -55,6 +76,7 @@ export default function GroupCard({ group }) {
     flexDirection: 'column',
     gap: '2px',
   };
+
   const statsStyle = {
     fontSize: '13px',
     color: '#cbd5e1',
@@ -65,6 +87,20 @@ export default function GroupCard({ group }) {
     alignItems: 'center',
   };
 
+  const deleteButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 10px',
+    background: 'rgba(220,38,38,0.15)',
+    color: '#f87171',
+    border: '1px solid rgba(220,38,38,0.4)',
+    borderRadius: '8px',
+    fontSize: '13px',
+    cursor: isDeleting ? 'not-allowed' : 'pointer',
+    transition: 'all 0.3s ease',
+  };
+
   const promptStyle = {
     fontSize: '13px',
     color: '#e2e8f0',
@@ -73,7 +109,7 @@ export default function GroupCard({ group }) {
     borderRadius: '10px',
     wordBreak: 'break-word',
     border: '1px solid rgba(255,255,255,0.05)',
-    marginBottom:'20px',
+    marginBottom: '20px',
   };
 
   const contentStyle = {
@@ -91,7 +127,7 @@ export default function GroupCard({ group }) {
   };
 
   const imageGridStyle = {
-display:'flex',
+    display: 'flex',
     flexWrap: 'wrap',
     justifyContent: 'left',
     gap: '14px',
@@ -106,6 +142,7 @@ display:'flex',
     transition: 'transform 0.2s ease',
   };
 
+  // 🖼️ Render input/output image sections
   const renderImages = (title, images) => (
     <div style={{ marginBottom: '20px' }}>
       <p
@@ -196,15 +233,28 @@ display:'flex',
                 <span>Email: {group.user_email}</span>
                 <span>Time (IST): {createdAt}</span>
                 <span>User Id: {group.created_by}</span>
-            
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'left', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={statsStyle}>
                 <span>Inputs: {group.input_count}</span>
                 <span>Outputs: {group.output_count}</span>
               </div>
+
+              {/* 🗑️ Delete button */}
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                style={{
+                  ...deleteButtonStyle,
+                  opacity: isDeleting ? 0.5 : 1,
+                }}
+              >
+                <Trash2 size={14} />
+                {isDeleting ? 'Deleting Inputs...' : 'Delete Inputs'}
+              </button>
+
               {expanded ? (
                 <ChevronUp size={20} color="#94a3b8" />
               ) : (
@@ -214,11 +264,10 @@ display:'flex',
           </div>
 
           {groupPrompt && <div style={promptStyle}>Prompt: {groupPrompt}</div>}
-    
         </div>
 
         <div style={contentStyle}>
-            {enhancedGroupPrompt && (
+          {enhancedGroupPrompt && (
             <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>
           )}
           {renderImages('Input Images', group.input_images)}
@@ -227,6 +276,7 @@ display:'flex',
         </div>
       </div>
 
+      {/* 🖼️ Full-screen image modal */}
       {modalImage && (
         <div
           style={{
