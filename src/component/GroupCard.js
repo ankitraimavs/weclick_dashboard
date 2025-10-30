@@ -335,28 +335,38 @@ export default function GroupCard({ group, onDelete }) {
             >
               <X size={20} color="#fff" />
             </button>
-            <a
-              href={modalImage}
-              download
-              style={{
-                position: 'absolute',
-                bottom: '20px',
-                right: '20px',
-                background: 'rgba(37,99,235,0.8)',
-                color: '#fff',
-                padding: '10px 16px',
-                borderRadius: '10px',
-                fontSize: '14px',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                backdropFilter: 'blur(6px)',
-              }}
-            >
-              <Download size={16} />
-              Download
-            </a>
+            <button
+ onClick={() => {
+  const link = document.createElement('a');
+  link.href = modalImage; // The SAS URL from backend
+  link.download = `image_${Date.now()}.jpg`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}}
+
+
+  style={{
+    position: 'absolute',
+    bottom: '20px',
+    right: '20px',
+    background: 'rgba(37,99,235,0.8)',
+    color: '#fff',
+    padding: '10px 16px',
+    borderRadius: '10px',
+    fontSize: '14px',
+    textDecoration: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    backdropFilter: 'blur(6px)',
+    cursor: 'pointer',
+  }}
+>
+  <Download size={16} />
+  Download
+</button>
+
           </div>
         </div>
       )}
