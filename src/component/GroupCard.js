@@ -7,7 +7,7 @@ export default function GroupCard({ group, onDelete }) {
   const [modalImage, setModalImage] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-    const API_BASE = 'https://weclick.dev.api.yonderwonder.ai';
+  const API_BASE = 'https://weclick.dev.api.yonderwonder.ai';
 
   const createdAt = new Intl.DateTimeFormat('en-IN', {
     timeZone: 'Asia/Kolkata',
@@ -101,11 +101,12 @@ export default function GroupCard({ group, onDelete }) {
     transition: 'all 0.3s ease',
   };
 
-    const qualityCheckStyle = {
+  const qualityCheckStyle = {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '6px',
-    padding: '6px 10px',
+    padding: '6px 6px',
     background: 'rgba(13, 71, 3, 1)',
     color: '#41fe34ff',
     border: '1px solid rgba(39, 179, 11, 0.4)',
@@ -113,6 +114,22 @@ export default function GroupCard({ group, onDelete }) {
     fontSize: '13px',
     cursor: isDeleting ? 'not-allowed' : 'pointer',
     transition: 'all 0.3s ease',
+    
+  };
+
+
+
+  const paidCheckStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'left',
+    color: '#51f338ff',
+    borderRadius: '8px',
+    fontSize: '13px',
+    cursor: isDeleting ? 'not-allowed' : 'pointer',
+    transition: 'all 0.3s ease',
+    width:'100px'
+    
   };
 
   const promptStyle = {
@@ -126,10 +143,10 @@ export default function GroupCard({ group, onDelete }) {
     marginBottom: '20px',
   };
 
-   const qualityStyle = {
+  const qualityStyle = {
     fontSize: '13px',
     color: '#e2e8f0',
-     background: 'rgba(255,255,255,0.05)',
+    background: 'rgba(255,255,255,0.05)',
     padding: '10px 14px',
     borderRadius: '10px',
     wordBreak: 'break-word',
@@ -255,21 +272,30 @@ export default function GroupCard({ group, onDelete }) {
             <div>
               <div style={titleStyle}>Group #{group.group_id}</div>
               <div style={metaStyle}>
-                <span>Email: {group.user_email}</span>
                 <span>Time (IST): {createdAt}</span>
                 <span>User Id: {group.created_by}</span>
+                <span>Email: {group.user_email}
+                </span>
+                  <span style={paidCheckStyle}>
+                  {group.is_paid && <p>
+                    Paid User
+                  </p>
+                  }
+                </span>
+
+
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={statsStyle}>
-                
-            
+
+
                 <span>Inputs: {group.input_count}</span>
                 <span>Outputs: {group.output_count}</span>
-               <span style={qualityCheckStyle}>
-  {group.quality_summary.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-</span>
+                <span style={qualityCheckStyle}>
+                  {group.quality_summary.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </span>
 
               </div>
 
@@ -295,7 +321,7 @@ export default function GroupCard({ group, onDelete }) {
           </div>
 
           {groupPrompt && <div style={promptStyle}>Prompt: {groupPrompt}</div>}
-         
+
         </div>
 
         <div style={contentStyle}>
@@ -368,36 +394,36 @@ export default function GroupCard({ group, onDelete }) {
               <X size={20} color="#fff" />
             </button>
             <button
- onClick={() => {
-  const link = document.createElement('a');
-  link.href = modalImage; // The SAS URL from backend
-  link.download = `image_${Date.now()}.jpg`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}}
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = modalImage; // The SAS URL from backend
+                link.download = `image_${Date.now()}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
 
 
-  style={{
-    position: 'absolute',
-    bottom: '20px',
-    right: '20px',
-    background: 'rgba(37,99,235,0.8)',
-    color: '#fff',
-    padding: '10px 16px',
-    borderRadius: '10px',
-    fontSize: '14px',
-    textDecoration: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    backdropFilter: 'blur(6px)',
-    cursor: 'pointer',
-  }}
->
-  <Download size={16} />
-  Download
-</button>
+              style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                background: 'rgba(37,99,235,0.8)',
+                color: '#fff',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                fontSize: '14px',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backdropFilter: 'blur(6px)',
+                cursor: 'pointer',
+              }}
+            >
+              <Download size={16} />
+              Download
+            </button>
 
           </div>
         </div>
