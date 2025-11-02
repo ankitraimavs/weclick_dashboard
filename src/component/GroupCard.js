@@ -101,10 +101,35 @@ export default function GroupCard({ group, onDelete }) {
     transition: 'all 0.3s ease',
   };
 
+    const qualityCheckStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 10px',
+    background: 'rgba(13, 71, 3, 1)',
+    color: '#41fe34ff',
+    border: '1px solid rgba(39, 179, 11, 0.4)',
+    borderRadius: '8px',
+    fontSize: '13px',
+    cursor: isDeleting ? 'not-allowed' : 'pointer',
+    transition: 'all 0.3s ease',
+  };
+
   const promptStyle = {
     fontSize: '13px',
     color: '#e2e8f0',
     background: 'rgba(255,255,255,0.05)',
+    padding: '10px 14px',
+    borderRadius: '10px',
+    wordBreak: 'break-word',
+    border: '1px solid rgba(255,255,255,0.05)',
+    marginBottom: '20px',
+  };
+
+   const qualityStyle = {
+    fontSize: '13px',
+    color: '#e2e8f0',
+     background: 'rgba(255,255,255,0.05)',
     padding: '10px 14px',
     borderRadius: '10px',
     wordBreak: 'break-word',
@@ -238,8 +263,14 @@ export default function GroupCard({ group, onDelete }) {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={statsStyle}>
+                
+            
                 <span>Inputs: {group.input_count}</span>
                 <span>Outputs: {group.output_count}</span>
+               <span style={qualityCheckStyle}>
+  {group.quality_summary.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+</span>
+
               </div>
 
               {/* 🗑️ Delete button */}
@@ -264,6 +295,7 @@ export default function GroupCard({ group, onDelete }) {
           </div>
 
           {groupPrompt && <div style={promptStyle}>Prompt: {groupPrompt}</div>}
+         
         </div>
 
         <div style={contentStyle}>
