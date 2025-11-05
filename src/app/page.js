@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import GroupCard from '../component/GroupCard';
 import { initializeApp } from 'firebase/app';
+import axios from 'axios';
 import {
   getAuth,
   GoogleAuthProvider,
