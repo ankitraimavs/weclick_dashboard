@@ -83,7 +83,9 @@ export default function DashboardPage() {
         return;
       }
 
+
       setUser(loggedUser);
+      handleLoginSuccess(loggedUser.email)
       loadData();
     } catch (err) {
       console.error('Login error:', err);
@@ -112,6 +114,34 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }
+
+
+
+async function handleLoginSuccess(userEmail) {
+  try {
+    if (!userEmail) throw new Error("Email is required for login.");
+
+    localStorage.setItem("userEmail", userEmail);
+
+    const res = await axios.post(`${API_BASE}/dashboard/api/get-user-token`, { email: userEmail });
+    const userToken = res.data.token;
+    const userId = res.data.user_id;
+
+    localStorage.setItem("userToken", userToken);
+     localStorage.setItem("userId", userId);
+
+    axios.defaults.headers.common["Authorization"] = `Bearer ${userToken}`;
+
+    console.log("✅ Login successful — token fetched and stored:", userToken);
+
+    // 5️⃣ Continue with your app flow (e.g. redirect to dashboard)
+    // window.location.href = "/dashboard";
+
+  } catch (error) {
+    console.error("❌ Login or token fetch failed:", error.response?.data || error.message);
+    alert("Login failed. Please try again.");
+  }
+}
 
   // --- Environment Toggle (with 8-sec full loading state) ---
   async function handleEnvToggle() {

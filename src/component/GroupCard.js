@@ -114,7 +114,8 @@ export default function GroupCard({ group, onDelete }) {
     fontSize: '13px',
     cursor: isDeleting ? 'not-allowed' : 'pointer',
     transition: 'all 0.3s ease',
-    
+    marginBottom: '10px',
+
   };
 
 
@@ -128,8 +129,8 @@ export default function GroupCard({ group, onDelete }) {
     fontSize: '13px',
     cursor: isDeleting ? 'not-allowed' : 'pointer',
     transition: 'all 0.3s ease',
-    width:'100px'
-    
+    width: '100px'
+
   };
 
   const promptStyle = {
@@ -276,7 +277,7 @@ export default function GroupCard({ group, onDelete }) {
                 <span>User Id: {group.created_by}</span>
                 <span>Email: {group.user_email}
                 </span>
-                  <span style={paidCheckStyle}>
+                <span style={paidCheckStyle}>
                   {group.is_paid && <p>
                     Paid User
                   </p>
@@ -293,9 +294,7 @@ export default function GroupCard({ group, onDelete }) {
 
                 <span>Inputs: {group.input_count}</span>
                 <span>Outputs: {group.output_count}</span>
-                <span style={qualityCheckStyle}>
-                  {group.quality_summary.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                </span>
+               
 
               </div>
 
@@ -328,6 +327,14 @@ export default function GroupCard({ group, onDelete }) {
           {enhancedGroupPrompt && (
             <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>
           )}
+           <span style={qualityCheckStyle}>
+                  {group.quality_summary
+                    ? group.quality_summary
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, c => c.toUpperCase())
+                    : 'No Quality Checker Data Available'}
+
+                </span>
           {renderImages('Input Images', group.input_images)}
           {group.output_images.length > 0 && <div style={dividerStyle}></div>}
           {renderImages('Generated Images', group.output_images)}
