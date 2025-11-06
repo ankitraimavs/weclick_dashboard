@@ -59,6 +59,7 @@ export default function DashboardPage() {
         const userDomain = currentUser.email.split('@')[1];
         if (userDomain === allowedDomain) {
           setUser(currentUser);
+          localStorage.setItem('email', currentUser.email);
           loadData();
         } else {
           signOut(auth);
