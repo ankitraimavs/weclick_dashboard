@@ -142,7 +142,7 @@ FileUploadCard.displayName = "FileUploadCard";
 
 
 export default function ProcessPage() {
-  const searchParams = useSearchParams();
+  // const searchParams = useSearchParams();
 
 
   const [prompt, setPrompt] = useState(""); 
@@ -158,9 +158,9 @@ export default function ProcessPage() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
   const [timings, setTimings] = useState([]);
-  const group_prompt = searchParams.get("prompt") || "";
-  const incomingInput1 = searchParams.get("input1") || "";
-  const incomingInput2 = searchParams.get("input2") || "";
+  // const group_prompt = searchParams.get("prompt") || "";
+  // const incomingInput1 = searchParams.get("input1") || "";
+  // const incomingInput2 = searchParams.get("input2") || "";
 
   const [userEmail, setUserEmail] = useState(null);
   const [authorized, setAuthorized] = useState(false);
@@ -205,52 +205,43 @@ export default function ProcessPage() {
     }
   }, []);
 
+useEffect(() => {
+  const searchParams = new URLSearchParams(window.location.search); // client-side only
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setPrompt(displayPrompt);
-    }, 300);
+  const rawPrompt = searchParams.get("prompt") || "";
+  const decodedPrompt = decodeURIComponent(rawPrompt);
+  setPrompt(decodedPrompt);
+  setDisplayPrompt(decodedPrompt);
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [displayPrompt]);
+  const incomingInput1 = searchParams.get("input1") || "";
+  const incomingInput2 = searchParams.get("input2") || "";
 
-  useEffect(() => {
-    const rawPrompt = searchParams.get("prompt") || "";
-    const decodedPrompt = decodeURIComponent(rawPrompt);
-    setPrompt(decodedPrompt);
-    setDisplayPrompt(decodedPrompt);
+  const fetchImage = async (url) => {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new File([blob], "input_from_group.jpg", { type: blob.type });
+  };
 
-    const fetchImage = async (url) => {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      return new File([blob], "input_from_group.jpg", { type: blob.type });
-    };
-
-    const preloadImages = async () => {
-      try {
-        if (incomingInput1) {
-          const file1Obj = await fetchImage(incomingInput1);
-          setFile1(file1Obj);
-        }
-        if (incomingInput2) {
-          const file2Obj = await fetchImage(incomingInput2);
-          setFile2(file2Obj);
-        }
-      } catch (err) {
-        console.error("Error loading input images:", err);
-      } finally {
-        setPreloading(false);
+  const preloadImages = async () => {
+    try {
+      if (incomingInput1) {
+        const file1Obj = await fetchImage(incomingInput1);
+        setFile1(file1Obj);
       }
-    };
+      if (incomingInput2) {
+        const file2Obj = await fetchImage(incomingInput2);
+        setFile2(file2Obj);
+      }
+    } catch (err) {
+      console.error("Error loading input images:", err);
+    } finally {
+      setPreloading(false);
+    }
+  };
 
-    preloadImages();
-    console.log(
-      "Preloaded prompt and images from URL parameters",
-      `${group_prompt}, ${incomingInput1}, ${incomingInput2}`
-    );
-  }, [group_prompt, incomingInput1, incomingInput2, searchParams]);
+  preloadImages();
+}, []);
+
 
 
   if (preloading) {
