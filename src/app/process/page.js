@@ -1,296 +1,910 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect, memo } from "react";
 import axios from "axios";
+import { useSearchParams } from "next/navigation";
+
+
+const DARK_BG_COLOR = "#1a1a2e";
+const CARD_BG = "rgba(40, 40, 60, 0.6)"; 
+const ACCENT_COLOR = "#66b3ff";
+const TEXT_COLOR = "#f0f0f0";
+const BORDER_COLOR = "rgba(255, 255, 255, 0.1)";
+const INPUT_BG = "rgba(255, 255, 255, 0.05)";
+
+
+const glassStyle = {
+  background: CARD_BG,
+  borderRadius: "16px",
+  boxShadow: "0 4px 30px rgba(0, 0, 0, 0.2)",
+  backdropFilter: "blur(10px)",
+  WebkitBackdropFilter: "blur(10px)", 
+  border: `1px solid ${BORDER_COLOR}`,
+};
+
+
+const FileUploadCard = memo(({ label, file, setFile }) => {
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreview(null);
+    }
+  }, [file]); 
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        padding: "15px",
+        borderRadius: "10px",
+        textAlign: "center",
+        background: file ? "rgba(50, 70, 90, 0.4)" : "rgba(40, 60, 80, 0.3)",
+        border: `1px solid ${BORDER_COLOR}`,
+        minHeight: "240px",
+        position: "relative",
+        boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+      }}
+    >
+      <label
+        style={{
+          fontWeight: "bold",
+          display: "block",
+          marginBottom: "8px",
+          color: TEXT_COLOR,
+        }}
+      >
+        {label}
+      </label>
+
+
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+        style={{
+          display: file ? "none" : "block",
+          margin: "0 auto",
+          color: TEXT_COLOR,
+          border: `1px solid ${BORDER_COLOR}`,
+          padding: "5px",
+          borderRadius: "5px",
+        }}
+      />
+
+
+      {file && (
+        <div
+          style={{
+            fontSize: "14px",
+            color: TEXT_COLOR,
+            marginBottom: "8px",
+            wordBreak: "break-all",
+          }}
+        >
+          Uploaded: {file.name.substring(0, 25)}
+          <button
+            onClick={() => setFile(null)}
+            style={{
+              marginLeft: "10px",
+              background: "rgba(220, 53, 69, 0.2)", 
+              border: `1px solid #dc3545`,
+              color: "#ff8080", 
+              cursor: "pointer",
+              fontSize: "12px",
+              padding: "2px 5px",
+              borderRadius: "3px",
+              transition: "all 0.2s", 
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      )}
+
+
+      <div
+        style={{
+          width: "200px",
+          height: "200px",
+          margin: "0 auto",
+          borderRadius: "5px",
+          border: `1px solid ${preview ? BORDER_COLOR : "transparent"}`, 
+          overflow: "hidden",
+          background: "#000", 
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "border-color 0.3s ease-out",
+        }}
+      >
+        {preview && (
+          <img
+            src={preview}
+            alt="preview"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              animation: "fadeIn 0.4s ease-out", 
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+});
+FileUploadCard.displayName = "FileUploadCard"; 
+
 
 export default function ProcessPage() {
-  const [prompt, setPrompt] = useState("");
-  const [height, setHeight] = useState(512);
-  const [files, setFiles] = useState([]);
+  const searchParams = useSearchParams();
+
+
+  const [prompt, setPrompt] = useState(""); 
+  const [displayPrompt, setDisplayPrompt] = useState(""); 
+
+  const [height1, setHeight1] = useState(150);
+  const [height2, setHeight2] = useState(150);
+  const [file1, setFile1] = useState(null);
+  const [file2, setFile2] = useState(null);
+  const [error, setError] = useState("");
+
   const [outputImages, setOutputImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
-  const [userId, setUserId] = useState("");
+  const [timings, setTimings] = useState([]);
+  const group_prompt = searchParams.get("prompt") || "";
+  const incomingInput1 = searchParams.get("input1") || "";
+  const incomingInput2 = searchParams.get("input2") || "";
+
+  const [userEmail, setUserEmail] = useState(null);
+  const [authorized, setAuthorized] = useState(false);
+  const [preloading, setPreloading] = useState(true);
+
 
   const isDev = true;
   const baseURL = isDev
     ? "https://weclick.dev.api.yonderwonder.ai"
     : "https://weclick.api.yonderwonder.ai";
 
+  const USER_ID = 20;
+  const AUTH_TOKEN =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyMCwic2Vzc2lvbl90b2tlbiI6ImI4ODUxMjNhLWRlZmMtNDQwZS04ZDVhLWJkMjQ4ZTJlYmFkNiIsImV4cCI6MTc5Mzg4MDI4OH0.f_YW1KjCDMQByRTspF99uztnCPAhyWW86vdyfszOEv8";
+
+  const normalizeHeight = (value, min, max) => {
+    const raw = 0.4 + ((value - min) / (max - min)) * (1.0 - 0.4);
+    return Math.round(raw * 10) / 10;
+  };
+
+
+  const handleClear = useCallback(() => {
+    setPrompt("");
+    setDisplayPrompt("");
+    setHeight1(150);
+    setHeight2(150);
+    setFile1(null);
+    setFile2(null);
+    setOutputImages([]);
+    setLoading(false);
+    setProgress("");
+    setTimings([]);
+    setError("");
+  }, []);
+
+
+  useEffect(() => {
+    const email = localStorage.getItem("email");
+    setUserEmail(email);
+    if (email && email.endsWith("@yonderwonder.ai")) {
+      setAuthorized(true);
+    }
+  }, []);
+
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setPrompt(displayPrompt);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [displayPrompt]);
+
+  useEffect(() => {
+    const rawPrompt = searchParams.get("prompt") || "";
+    const decodedPrompt = decodeURIComponent(rawPrompt);
+    setPrompt(decodedPrompt);
+    setDisplayPrompt(decodedPrompt);
+
+    const fetchImage = async (url) => {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return new File([blob], "input_from_group.jpg", { type: blob.type });
+    };
+
+    const preloadImages = async () => {
+      try {
+        if (incomingInput1) {
+          const file1Obj = await fetchImage(incomingInput1);
+          setFile1(file1Obj);
+        }
+        if (incomingInput2) {
+          const file2Obj = await fetchImage(incomingInput2);
+          setFile2(file2Obj);
+        }
+      } catch (err) {
+        console.error("Error loading input images:", err);
+      } finally {
+        setPreloading(false);
+      }
+    };
+
+    preloadImages();
+    console.log(
+      "Preloaded prompt and images from URL parameters",
+      `${group_prompt}, ${incomingInput1}, ${incomingInput2}`
+    );
+  }, [group_prompt, incomingInput1, incomingInput2, searchParams]);
+
+
+  if (preloading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: DARK_BG_COLOR,
+          color: ACCENT_COLOR,
+          fontSize: "18px",
+          fontWeight: "600",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            width: "200px",
+            height: "6px",
+            background: INPUT_BG,
+            borderRadius: "3px",
+            overflow: "hidden",
+            marginBottom: "12px",
+          }}
+        >
+          <div
+            style={{
+              width: "60%",
+              height: "100%",
+              background: ACCENT_COLOR,
+              borderRadius: "3px",
+              animation: "loadingBar 1.5s infinite ease-in-out",
+            }}
+          />
+        </div>
+        Loading images and prompt...
+        <style>
+          {`
+            @keyframes loadingBar {
+              0% { transform: translateX(-100%); }
+              50% { transform: translateX(0); }
+              100% { transform: translateX(100%); }
+            }
+            
+            @keyframes fadeIn {
+              from { opacity: 0; transform: scale(0.95); }
+              to { opacity: 1; transform: scale(1); }
+            }
+          `}
+        </style>
+      </div>
+    );
+  }
+
+
   const handleProcess = async () => {
-    if (!userId) return alert("Please enter your user ID first.");
-    if (files.length < 2) return alert("Please upload two images first.");
+    if (!file1 || !file2)
+      return alert("Please upload both Image 1 and Image 2.");
+    setError("");
+
+    const filesToUpload = [file1, file2];
 
     setLoading(true);
-    setProgress("Creating group...");
+    setOutputImages([]);
+    setTimings([]);
+    let stepTimings = [];
+    
+
+    let processingStartTime = 0;
 
     try {
+      const headers = {
+        Authorization: `Bearer ${AUTH_TOKEN}`,
+      };
+
+
+      let start = performance.now();
+      setProgress("Creating group...");
       const groupRes = await axios.post(
         `${baseURL}/v2/group/create`,
-        {},
-        { params: { user_id: userId } }
+        null,
+        { params: { user_id: USER_ID }, headers }
       );
       const groupId = groupRes.data.groupId;
-      setProgress(`Group created: ${groupId}`);
+      let end = performance.now();
+      stepTimings.push({
+        step: "Create group",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
 
-      const filenames = files.map((f) => f.name);
-      const uploadRes = await axios.post(
-        `${baseURL}/v2/uploads/generate-upload-urls`,
-        { user_id: userId, filenames }
+
+      start = performance.now();
+      setProgress("Generating upload URLs...");
+      const uploads = await Promise.all(
+        filesToUpload.map(async (file) => {
+          const formData = new FormData();
+          formData.append("user_id", USER_ID.toString());
+          formData.append("filename", file.name);
+
+          const res = await axios.post(
+            `${baseURL}/v2/uploads/generate-upload-url`,
+            formData,
+            { headers }
+          );
+          return res.data;
+        })
       );
-      const uploads = uploadRes.data.upload_urls;
+      end = performance.now();
+      stepTimings.push({
+        step: "Generate upload URLs",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
       const blobPaths = uploads.map((u) => u.blob_path);
 
+
+      start = performance.now();
       setProgress("Uploading images...");
       await Promise.all(
-        uploads.map(async (u, i) => {
-          await fetch(u.upload_url, {
+        uploads.map((u, i) =>
+          fetch(u.upload_url, {
             method: "PUT",
             headers: {
               "x-ms-blob-type": "BlockBlob",
-              "Content-Type": files[i].type,
+              "Content-Type": filesToUpload[i].type,
             },
-            body: files[i],
-          });
-        })
+            body: filesToUpload[i],
+          })
+        )
       );
-
-      setProgress("Finalizing uploads...");
-      await axios.post(`${baseURL}/v2/uploads/uploads-complete`, {
-        blob_paths: blobPaths,
-        user_id: userId,
-        group_id: groupId,
+      end = performance.now();
+      stepTimings.push({
+        step: "Upload images",
+        time: ((end - start) / 1000).toFixed(2) + "s",
       });
 
+
+      start = performance.now();
+      setProgress("Finalizing uploads...");
+      const finalizeForm = new FormData();
+      blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
+      finalizeForm.append("user_id", USER_ID.toString());
+      finalizeForm.append("group_id", groupId.toString());
+
+      await axios.post(
+        `${baseURL}/v2/uploads/uploads-complete`,
+        finalizeForm,
+        { headers }
+      );
+      end = performance.now();
+      stepTimings.push({
+        step: "Finalize uploads",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
+
+
+      start = performance.now();
       setProgress("Starting processing...");
+      const normalizedHeights = [
+        normalizeHeight(height1, 140, 160),
+        normalizeHeight(height2, 140, 160),
+      ];
+
       const processRes = await axios.post(
         `${baseURL}/v2/process/groups/${groupId}`,
         {
-          prompt,
-          mode: "default",
-          generations: 1,
-          height_index_list: [height],
-        }
+          prompt, 
+          mode: "full_body",
+          generations: 4,
+          height_index_list: normalizedHeights,
+        },
+        { headers: { ...headers, "Content-Type": "application/json" } }
       );
 
       const reqIds = processRes.data.request_ids;
       if (!reqIds || reqIds.length === 0)
         throw new Error("No request IDs returned from processing API.");
+      end = performance.now();
+      stepTimings.push({
+        step: "Start processing",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
+      
+
+      processingStartTime = performance.now(); 
+
 
       setProgress("Processing images (may take a few minutes)...");
-      const interval = setInterval(async () => {
+      const pollStatus = async (reqIds) => {
         try {
-          const statusRes = await axios.get(`${baseURL}/process/status`, {
-            params: { request_ids: reqIds },
-          });
+          const params = new URLSearchParams();
+          reqIds.forEach((id) => params.append("request_ids", id));
+
+          const statusRes = await axios.get(
+            `${baseURL}/process/status?${params.toString()}`,
+            {
+              headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+            }
+          );
+
           const { status, outputs } = statusRes.data;
 
           if (status === "done") {
-            clearInterval(interval);
+
+            const generationEnd = performance.now();
+            stepTimings.push({
+                step: "Pipeline Processing",
+                time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
+            });
+            
             const doneUrls = outputs
               .filter((o) => o.status === "done" && o.url)
               .map((o) => o.url);
             setOutputImages(doneUrls);
-            setProgress("Processing complete!");
+            setProgress("Processing complete.");
             setLoading(false);
+            setTimings(stepTimings); 
           } else if (status === "error") {
-            clearInterval(interval);
             setProgress("Error during processing. Try again.");
             setLoading(false);
+          } else {
+            setTimeout(() => pollStatus(reqIds), 8000);
           }
         } catch (err) {
           console.error("Polling error:", err);
+          setProgress("Polling encountered an error. Retrying...");
+          setTimeout(() => pollStatus(reqIds), 8000);
         }
-      }, 8000);
+      };
+      pollStatus(reqIds);
     } catch (err) {
       console.error(err);
+
+      let message = "Something went wrong. Please retry.";
+
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          message = `Error ${err.response.status}: ${
+            err.response.data?.message || err.response.statusText
+          }`;
+        } else if (err.request) {
+          message = "Network error: No response from server.";
+        } else {
+          message = `Request error: ${err.message}`;
+        }
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+
+      setError(message);
       setProgress("Something went wrong. Please retry.");
       setLoading(false);
     }
   };
 
+  // --- Unauthorized Screen (Styled) ---
+  if (!authorized) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: DARK_BG_COLOR,
+          color: "#dc3545",
+          fontSize: "18px",
+          fontWeight: "600",
+          textAlign: "center",
+          lineHeight: "1.5",
+        }}
+      >
+        <div>
+          Not authorized to access this page.
+          <br />
+          Please use your @yonderwonder.ai email.
+        </div>
+      </div>
+    );
+  }
+
+  // --- Main Component Render (Styled) ---
   return (
     <div
       style={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, rgba(25,25,40,1) 0%, rgba(10,10,20,1) 100%)",
+        background: DARK_BG_COLOR,
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        padding: "40px",
+        padding: "20px",
+        fontFamily: "sans-serif",
       }}
     >
+      {/* --- Global animation styles --- */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+          }
+        `}
+      </style>
+
       <div
         style={{
+          ...glassStyle,
           width: "100%",
-          maxWidth: "700px",
-          background: "rgba(255, 255, 255, 0.1)",
-          borderRadius: "20px",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.2)",
-          padding: "40px",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-          color: "#fff",
+          maxWidth: "1000px",
+          padding: "30px",
+          color: TEXT_COLOR,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "30px",
         }}
       >
-        <h1
-          style={{
-            fontSize: "28px",
-            textAlign: "center",
-            marginBottom: "30px",
-            fontWeight: "600",
-            letterSpacing: "0.5px",
-          }}
-        >
-          AI Image Processor
-        </h1>
-
-        {/* User ID */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
-          <label style={{ fontWeight: "500", width: "100px" }}>User ID:</label>
-          <input
-            type="text"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            placeholder="Enter user ID"
-            style={{
-              flex: 1,
-              padding: "10px 14px",
-              borderRadius: "10px",
-              border: "none",
-              outline: "none",
-              background: "rgba(255,255,255,0.15)",
-              color: "#fff",
-            }}
-          />
-        </div>
-
-        {/* Prompt */}
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Write your prompt..."
-          style={{
-            width: "100%",
-            minHeight: "100px",
-            background: "rgba(255,255,255,0.15)",
-            border: "none",
-            borderRadius: "10px",
-            color: "#fff",
-            padding: "12px 16px",
-            outline: "none",
-            resize: "none",
-            marginBottom: "20px",
-          }}
-        />
-
-        {/* Height */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
-          <label style={{ fontWeight: "500", width: "100px" }}>Height:</label>
-          <input
-            type="number"
-            value={height}
-            onChange={(e) => setHeight(Number(e.target.value))}
-            style={{
-              width: "100px",
-              padding: "10px",
-              borderRadius: "10px",
-              border: "none",
-              background: "rgba(255,255,255,0.15)",
-              color: "#fff",
-              outline: "none",
-            }}
-          />
-        </div>
-
-        {/* File Upload */}
-        <div style={{ marginBottom: "25px" }}>
-          <label style={{ fontWeight: "500", display: "block", marginBottom: 8 }}>
-            Upload two images:
-          </label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => setFiles(Array.from(e.target.files || []))}
-            style={{
-              color: "#ccc",
-            }}
-          />
-        </div>
-
-        {/* Button */}
-        <button
-          onClick={handleProcess}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "12px",
-            border: "none",
-            background: loading
-              ? "rgba(0,0,0,0.4)"
-              : "linear-gradient(135deg, #4b6cb7 0%, #182848 100%)",
-            color: "#fff",
-            fontWeight: "600",
-            fontSize: "16px",
-            cursor: loading ? "not-allowed" : "pointer",
-            transition: "0.3s",
-          }}
-        >
-          {loading ? "Processing..." : "Start Processing"}
-        </button>
-
-        {/* Progress */}
-        {progress && (
-          <p
-            style={{
-              textAlign: "center",
-              marginTop: "20px",
-              fontStyle: "italic",
-              color: "#ddd",
-            }}
-          >
-            {progress}
-          </p>
-        )}
-
-        {/* Output Images */}
-        {outputImages.length > 0 && (
-          <div style={{ marginTop: "30px" }}>
-            <h2
+        {/* --- Left Column: Inputs --- */}
+        <div>
+          {error && (
+            <div
               style={{
-                fontSize: "20px",
-                fontWeight: "500",
-                marginBottom: "15px",
+                background: "rgba(220, 53, 69, 0.15)",
+                border: "1px solid #dc3545",
+                color: "#ff8080",
+                padding: "10px",
+                borderRadius: "8px",
+                marginBottom: "20px",
+                fontSize: "14px",
+                lineHeight: "1.5",
+                transition: "all 0.3s ease-out",
               }}
             >
-              Output Images:
+              <strong>Error:</strong> {error}
+            </div>
+          )}
+
+          {/* 1. Upload Images */}
+          <div style={{ marginBottom: "20px" }}>
+            <h2
+              style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                marginBottom: "10px",
+                color: ACCENT_COLOR,
+              }}
+            >
+              1. Upload Images
+            </h2>
+            <div style={{ display: "flex", gap: "15px" }}>
+              <FileUploadCard label="Image 1" file={file1} setFile={setFile1} />
+              <FileUploadCard label="Image 2" file={file2} setFile={setFile2} />
+            </div>
+          </div>
+
+          {/* 2. Prompt Section */}
+          <div style={{ marginBottom: "20px" }}>
+            <h2
+              style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                marginBottom: "10px",
+                color: ACCENT_COLOR,
+              }}
+            >
+              2. Prompt
+            </h2>
+            <textarea
+              value={displayPrompt}
+              onChange={(e) => setDisplayPrompt(e.target.value)}
+              placeholder="Enter your description here..."
+              style={{
+                width: "100%",
+                minHeight: "100px",
+                border: `1px solid ${BORDER_COLOR}`,
+                borderRadius: "5px",
+                color: TEXT_COLOR,
+                background: INPUT_BG,
+                padding: "10px",
+                outline: "none",
+                resize: "vertical",
+                transition: "background 0.2s, border-color 0.2s",
+              }}
+            />
+          </div>
+
+          {/* 3. Height Adjustment Section */}
+          <div style={{ marginBottom: "25px" }}>
+            <h2
+              style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                marginBottom: "10px",
+                color: ACCENT_COLOR,
+              }}
+            >
+              3. Height Adjustment (cm)
             </h2>
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "20px",
+                display: "flex",
+                justifyContent: "space-around",
+                gap: "15px",
               }}
             >
-              {outputImages.map((url, idx) => (
-                <img
-                  key={idx}
-                  src={url}
-                  alt={`output-${idx}`}
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontSize: "14px",
+                    color: TEXT_COLOR,
+                  }}
+                >
+                  Image 1:
+                </label>
+                <input
+                  type="number"
+                  value={height1}
+                  onChange={(e) => setHeight1(Number(e.target.value))}
+                  min="140"
+                  max="160"
                   style={{
                     width: "100%",
-                    borderRadius: "15px",
-                    border: "1px solid rgba(255,255,255,0.3)",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                    padding: "8px",
+                    borderRadius: "5px",
+                    border: `1px solid ${BORDER_COLOR}`,
+                    outline: "none",
+                    background: INPUT_BG,
+                    color: TEXT_COLOR,
+                    transition: "background 0.2s, border-color 0.2s",
                   }}
                 />
-              ))}
+              </div>
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontSize: "14px",
+                    color: TEXT_COLOR,
+                  }}
+                >
+                  Image 2:
+                </label>
+                <input
+                  type="number"
+                  value={height2}
+                  onChange={(e) => setHeight2(Number(e.target.value))}
+                  min="140"
+                  max="160"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "5px",
+                    border: `1px solid ${BORDER_COLOR}`,
+                    outline: "none",
+                    background: INPUT_BG,
+                    color: TEXT_COLOR,
+                    transition: "background 0.2s, border-color 0.2s",
+                  }}
+                />
+              </div>
             </div>
           </div>
-        )}
+
+          {/* Action Buttons */}
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={handleProcess}
+              disabled={loading || !file1 || !file2}
+              style={{
+                flex: 3,
+                padding: "12px",
+                borderRadius: "8px",
+                border: "none",
+                background:
+                  loading || !file1 || !file2
+                    ? "rgba(100, 100, 100, 0.6)"
+                    : ACCENT_COLOR,
+                color:
+                  loading || !file1 || !file2 ? "#aaa" : DARK_BG_COLOR,
+                fontWeight: "700",
+                fontSize: "16px",
+                cursor:
+                  loading || !file1 || !file2 ? "not-allowed" : "pointer",
+                transition: "0.2s",
+                boxShadow:
+                  loading || !file1 || !file2
+                    ? "none"
+                    : `0 0 15px ${ACCENT_COLOR}60`,
+              }}
+            >
+              {loading ? "Processing..." : "Start Processing"}
+            </button>
+            <button
+              onClick={handleClear}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #dc3545",
+                background: "transparent",
+                color: "#dc3545",
+                fontWeight: "600",
+                fontSize: "16px",
+                cursor: "pointer",
+                transition: "0.2s",
+              }}
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        {/* --- Right Column: Output and Status --- */}
+        <div>
+          <h2
+            style={{
+              fontSize: "20px",
+              fontWeight: "600",
+              marginBottom: "15px",
+              paddingBottom: "5px",
+              borderBottom: `1px solid ${BORDER_COLOR}`,
+              color: ACCENT_COLOR,
+            }}
+          >
+            Status & Output (USES DEV SERVER)
+          </h2>
+
+          {/* Progress and Timings */}
+          <div style={{ minHeight: "100px", marginBottom: "20px" }}>
+            {progress && (
+              <p
+                style={{
+                  marginTop: "10px",
+                  padding: "10px",
+                  background: INPUT_BG,
+                  borderRadius: "8px",
+                  color: TEXT_COLOR,
+                  border: `1px solid ${BORDER_COLOR}`,
+                  transition: "all 0.3s ease-out",
+                  minHeight: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                Status: {progress}
+              </p>
+            )}
+
+            {timings.length > 0 && (
+              <div
+                style={{
+                  marginTop: "15px",
+                  border: `1px solid ${BORDER_COLOR}`,
+                  padding: "10px",
+                  borderRadius: "8px",
+                  background: INPUT_BG,
+                  transition: "all 0.3s ease-out",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "500",
+                    marginBottom: "5px",
+                    color: ACCENT_COLOR,
+                  }}
+                >
+                  Step Timings:
+                </h3>
+                <ul
+                  style={{
+                    listStyleType: "none",
+                    paddingLeft: "0",
+                    fontSize: "14px",
+                  }}
+                >
+                  {timings.map((t, idx) => (
+                    <li key={idx} style={{ marginBottom: "3px" }}>
+                      {t.step}:{" "}
+                      <span style={{ color: ACCENT_COLOR }}>{t.time}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Output Images */}
+          {outputImages.length > 0 && (
+            <div
+              style={{
+                marginTop: "20px",
+                transition: "all 0.3s ease-out",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  marginBottom: "10px",
+                  color: ACCENT_COLOR,
+                }}
+              >
+                Generated Images
+              </h2>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px",
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                  paddingRight: "5px",
+                }}
+              >
+                {outputImages.map((url, idx) => (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    key={idx}
+                    style={{ display: "block" }}
+                  >
+                    <img
+                      src={url}
+                      alt={`output-${idx}`}
+                      style={{
+                        width: "100%",
+                        aspectRatio: "3/4",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                        border: `2px solid ${ACCENT_COLOR}`,
+                        transition: "transform 0.2s",
+
+                        // Apply animation without the delay
+                        animation: `fadeIn 0.5s ease-out`,
+                        animationFillMode: "both", // Start at opacity 0
+                      }}
+                      onMouseOver={(e) =>
+                        (e.currentTarget.style.transform = "scale(1.02)")
+                      }
+                      onMouseOut={(e) =>
+                        (e.currentTarget.style.transform = "scale(1)")
+                      }
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

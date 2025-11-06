@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, X, Download, Trash2 } from 'lucide-react';
+import { useRouter } from "next/navigation";
 
 export default function GroupCard({ group, onDelete }) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [modalImage, setModalImage] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -298,18 +300,65 @@ export default function GroupCard({ group, onDelete }) {
 
               </div>
 
-              {/* 🗑️ Delete button */}
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                style={{
-                  ...deleteButtonStyle,
-                  opacity: isDeleting ? 0.5 : 1,
-                }}
-              >
-                <Trash2 size={14} />
-                {isDeleting ? 'Deleting Inputs...' : 'Delete Inputs'}
-              </button>
+
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+
+
+    const input1 = group.input_images?.[0]?.url || '';
+    const input2 = group.input_images?.[1]?.url || '';
+
+    const prompt =
+      group.output_images?.[0]?.prompt ||
+      group.output_images?.[0]?.enhanced_prompt ||
+      group.prompt ||
+      '';
+
+
+    console.log('Input1:', input1);
+    console.log('Input2:', input2);
+
+    const params = new URLSearchParams({
+      prompt: prompt,
+      input1: input1,
+      input2: input2,
+    });
+
+    router.push(`/process?${params.toString()}`);
+  }}
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 10px',
+    background: 'rgba(37,99,235,0.15)',
+    color: '#60a5fa',
+    border: '1px solid rgba(37,99,235,0.4)',
+    borderRadius: '8px',
+    fontSize: '13px',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+  }}
+>
+   Playground
+</button>
+
+
+
+
+<button
+  onClick={handleDelete}
+  disabled={isDeleting}
+  style={{
+    ...deleteButtonStyle,
+    opacity: isDeleting ? 0.5 : 1,
+  }}
+>
+  <Trash2 size={14} />
+  {isDeleting ? 'Deleting Inputs...' : 'Delete Inputs'}
+</button>
+
 
               {expanded ? (
                 <ChevronUp size={20} color="#94a3b8" />

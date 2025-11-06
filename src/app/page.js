@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import GroupCard from '../component/GroupCard';
 import { initializeApp } from 'firebase/app';
-import axios from 'axios';
 import {
   getAuth,
   GoogleAuthProvider,
@@ -35,25 +34,25 @@ export default function DashboardPage() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState('user_email');
-  const [env, setEnv] = useState('dev'); // Current environment
-  const [shifting, setShifting] = useState(false); // Env switching state
+  const [env, setEnv] = useState('prod');
+  const [shifting, setShifting] = useState(false);
 
   const allowedDomain = 'yonderwonder.ai';
 
-  // --- Environment Handling (Persist in localStorage) ---
+
   useEffect(() => {
     const savedEnv = localStorage.getItem('dashboard_env');
     if (savedEnv) {
       setEnv(savedEnv);
     } else {
-      localStorage.setItem('dashboard_env', 'dev');
-      setEnv('dev');
+      localStorage.setItem('dashboard_env', 'prod');
+      setEnv('prod');
     }
   }, []);
 
   const API_BASE = 'https://weclick.dev.api.yonderwonder.ai';
 
-  // --- Firebase Auth Persistence ---
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -69,9 +68,9 @@ export default function DashboardPage() {
       }
     });
     return () => unsubscribe();
-  }, [env]); // reload data when env changes
+  }, [env]);
 
-  // --- Authentication Handlers ---
+
   async function handleLogin() {
     try {
       const result = await signInWithPopup(auth, provider);
@@ -84,9 +83,9 @@ export default function DashboardPage() {
         return;
       }
 
+      localStorage.setItem('email', loggedUser.email);
 
       setUser(loggedUser);
-      handleLoginSuccess(loggedUser.email)
       loadData();
     } catch (err) {
       console.error('Login error:', err);
@@ -95,17 +94,19 @@ export default function DashboardPage() {
   }
 
   async function handleLogout() {
+
+    localStorage.removeItem('email');
     await signOut(auth);
     setUser(null);
     setGroups([]);
   }
 
-  // --- Data Fetch ---
+
   async function loadData() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/dashboard/api/groups?limit=50`);
+      const res = await fetch(`${API_BASE}/dashboard/api/groups?limit=100`);
       if (!res.ok) throw new Error('Failed to fetch data');
       const data = await res.json();
       setGroups(data.groups || []);
@@ -117,34 +118,6 @@ export default function DashboardPage() {
   }
 
 
-
-async function handleLoginSuccess(userEmail) {
-  try {
-    if (!userEmail) throw new Error("Email is required for login.");
-
-    localStorage.setItem("userEmail", userEmail);
-
-    const res = await axios.post(`${API_BASE}/dashboard/api/get-user-token`, { email: userEmail });
-    const userToken = res.data.token;
-    const userId = res.data.user_id;
-
-    localStorage.setItem("userToken", userToken);
-     localStorage.setItem("userId", userId);
-
-    axios.defaults.headers.common["Authorization"] = `Bearer ${userToken}`;
-
-    console.log("✅ Login successful — token fetched and stored:", userToken);
-
-    // 5️⃣ Continue with your app flow (e.g. redirect to dashboard)
-    // window.location.href = "/dashboard";
-
-  } catch (error) {
-    console.error("❌ Login or token fetch failed:", error.response?.data || error.message);
-    alert("Login failed. Please try again.");
-  }
-}
-
-  // --- Environment Toggle (with 8-sec full loading state) ---
   async function handleEnvToggle() {
     const newEnv = env === 'dev' ? 'prod' : 'dev';
     setShifting(true);
@@ -158,17 +131,17 @@ async function handleLoginSuccess(userEmail) {
         body: JSON.stringify({ env_name: newEnv }),
       });
 
-      // Save new environment
+
       localStorage.setItem('dashboard_env', newEnv);
       setEnv(newEnv);
 
-      // Keep full-screen loader visible for 8 seconds
+
       setTimeout(() => {
         window.location.reload();
       }, 8000);
     } catch (err) {
       console.error('Failed to switch environment:', err);
-      // Still show loading until reload to prevent flicker
+
       setTimeout(() => {
         alert('Environment switch failed. Try again.');
         window.location.reload();
@@ -176,7 +149,7 @@ async function handleLoginSuccess(userEmail) {
     }
   }
 
-  // --- Filtering Logic ---
+
   const filteredGroups = groups.filter((group) => {
     if (searchType === 'prompt') {
       const groupPrompt =
@@ -190,7 +163,7 @@ async function handleLoginSuccess(userEmail) {
     return true;
   });
 
-  // --- Loading or Switching State ---
+
   if (loading || shifting) {
     return (
       <div
@@ -224,7 +197,7 @@ async function handleLoginSuccess(userEmail) {
     );
   }
 
-  // --- Error State ---
+
   if (error) {
     return (
       <div style={{ textAlign: 'center', color: '#f87171', marginTop: '40px' }}>
@@ -233,7 +206,7 @@ async function handleLoginSuccess(userEmail) {
     );
   }
 
-  // --- Main UI ---
+
   return (
     <div
       style={{
@@ -248,7 +221,7 @@ async function handleLoginSuccess(userEmail) {
         overflowX: 'hidden',
       }}
     >
-      {/* Search + Env Toggle + User Info */}
+
       {user && (
         <div
           style={{
@@ -260,7 +233,9 @@ async function handleLoginSuccess(userEmail) {
             marginLeft: '25px',
           }}
         >
-          {/* Search + Toggle Row */}
+
+
+
           <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', alignItems: 'center' }}>
             <select
               value={searchType}
@@ -296,8 +271,36 @@ async function handleLoginSuccess(userEmail) {
               }}
             />
 
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+              <button
+                onClick={() => {
+
+                  window.location.href = '/process';
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  background: 'rgba(37,99,235,0.15)',
+                  color: '#60a5fa',
+                  border: '1px solid rgba(37,99,235,0.4)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(37,99,235,0.25)')}
+                onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(37,99,235,0.15)')}
+              >
+                Open Playground
+              </button>
+            </div>
+
+
             {/* Environment Toggle */}
-            <button
+            {/* <button
               onClick={handleEnvToggle}
               disabled={shifting}
               style={{
@@ -314,10 +317,10 @@ async function handleLoginSuccess(userEmail) {
               {shifting
                 ? `Switching...`
                 : `Current: ${env.toUpperCase()} | Switch`}
-            </button>
+            </button> */}
           </div>
 
-          {/* User Info & Logout */}
+
           <div
             style={{
               display: 'flex',
@@ -353,7 +356,7 @@ async function handleLoginSuccess(userEmail) {
         </div>
       )}
 
-      {/* Groups */}
+
       {user && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
           {filteredGroups.length > 0 ? (
@@ -373,7 +376,7 @@ async function handleLoginSuccess(userEmail) {
         </div>
       )}
 
-      {/* 🔐 LOGIN MODAL */}
+
       {!user && (
         <>
           <motion.div
@@ -443,7 +446,7 @@ async function handleLoginSuccess(userEmail) {
                     letterSpacing: '-0.5px',
                   }}
                 >
-                  Welcome to <span style={{ color: '#60a5fa' }}>Yonder Dashboard</span>
+                  Welcome to <span style={{ color: '#60a5fa' }}>WeClick Dashboard</span>
                 </h1>
                 <p style={{ color: '#9ca3af', marginTop: '8px', fontSize: '14px' }}>
                   Sign in using your company Google account
