@@ -166,15 +166,9 @@ export default function ProcessPage() {
   const [authorized, setAuthorized] = useState(false);
   const [preloading, setPreloading] = useState(true);
 
-
-  const isDev = true;
-  const baseURL = isDev
-    ? "https://weclick.dev.api.yonderwonder.ai"
-    : "https://weclick.api.yonderwonder.ai";
-
-  const USER_ID = 20;
-  const AUTH_TOKEN =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyMCwic2Vzc2lvbl90b2tlbiI6ImI4ODUxMjNhLWRlZmMtNDQwZS04ZDVhLWJkMjQ4ZTJlYmFkNiIsImV4cCI6MTc5Mzg4MDI4OH0.f_YW1KjCDMQByRTspF99uztnCPAhyWW86vdyfszOEv8";
+const USER_ID = process.env.NEXT_PUBLIC_USER_ID;
+const AUTH_TOKEN = process.env.NEXT_PUBLIC_AUTH_TOKEN;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
   const normalizeHeight = (value, min, max) => {
     const raw = 0.4 + ((value - min) / (max - min)) * (1.0 - 0.4);
@@ -323,7 +317,7 @@ useEffect(() => {
       let start = performance.now();
       setProgress("Creating group...");
       const groupRes = await axios.post(
-        `${baseURL}/v2/group/create`,
+        `${API_BASE}/v2/group/create`,
         null,
         { params: { user_id: USER_ID }, headers }
       );
@@ -344,7 +338,7 @@ useEffect(() => {
           formData.append("filename", file.name);
 
           const res = await axios.post(
-            `${baseURL}/v2/uploads/generate-upload-url`,
+            `${API_BASE}/v2/uploads/generate-upload-url`,
             formData,
             { headers }
           );
@@ -388,7 +382,7 @@ useEffect(() => {
       finalizeForm.append("group_id", groupId.toString());
 
       await axios.post(
-        `${baseURL}/v2/uploads/uploads-complete`,
+        `${API_BASE}/v2/uploads/uploads-complete`,
         finalizeForm,
         { headers }
       );
@@ -407,7 +401,7 @@ useEffect(() => {
       ];
 
       const processRes = await axios.post(
-        `${baseURL}/v2/process/groups/${groupId}`,
+        `${API_BASE}/v2/process/groups/${groupId}`,
         {
           prompt, 
           mode: "full_body",
@@ -437,7 +431,7 @@ useEffect(() => {
           reqIds.forEach((id) => params.append("request_ids", id));
 
           const statusRes = await axios.get(
-            `${baseURL}/process/status?${params.toString()}`,
+            `${API_BASE}/process/status?${params.toString()}`,
             {
               headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
             }
