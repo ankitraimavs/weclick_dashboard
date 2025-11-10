@@ -219,45 +219,50 @@ export default function GroupCard({ group, onDelete }) {
         </div>
       ) : (
         <div style={imageGridStyle}>
-          {images.map((img, idx) => (
-            <div
-              key={idx}
-              style={imageItemStyle}
-              onClick={() => img.url && setModalImage(img.url)}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            >
-              {img.url ? (
-                <img
-                  src={img.url}
-                  alt={title}
-                  style={{
-                    height: '120px',
-                    objectFit: 'cover',
-                    borderRadius: '10px',
-                  }}
-                  onError={(e) => {
-                    e.currentTarget.src = '';
-                    e.currentTarget.parentElement.innerHTML =
-                      `<div style="height:120px;display:flex;align-items:center;justify-content:center;background:rgba(127,29,29,0.2);color:#f87171;font-size:13px;">⚠️ Unavailable</div>`;
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    height: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '13px',
-                    color: '#94a3b8',
-                  }}
-                >
-                  {img.status === 'error' ? '⚠️ Error' : '⏳ Processing'}
-                </div>
-              )}
-            </div>
-          ))}
+        {images.map((img, idx) => (
+  <div
+    key={idx}
+    style={imageItemStyle}
+    onClick={() => img.url && setModalImage(img.url)}
+    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+  >
+    {img.url ? (
+      <img
+        src={img.url}
+        alt={title}
+        style={{
+          height: '120px',
+          objectFit: 'cover',
+          borderRadius: '10px',
+        }}
+        onError={(e) => {
+          e.currentTarget.src = '';
+          e.currentTarget.parentElement.innerHTML =
+            `<div style="height:120px;display:flex;align-items:center;justify-content:center;background:rgba(127,29,29,0.2);color:#f87171;font-size:13px;">⚠️ Unavailable</div>`;
+        }}
+      />
+    ) : (
+      <div
+        style={{
+          height: '120px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '13px',
+          color: img.status === 'error' ? '#f87171' : '#94a3b8',
+          background: img.status === 'error'
+            ? 'rgba(127,29,29,0.2)'
+            : 'rgba(255,255,255,0.05)',
+          borderRadius: '10px',
+        }}
+      >
+        {img.status === 'error' ? '⚠️ Generation Failed' : '⏳ Processing'}
+      </div>
+    )}
+  </div>
+))}
+
         </div>
       )}
     </div>
