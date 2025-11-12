@@ -274,10 +274,69 @@ export default function DashboardPage() {
             />
 
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '12px' }}>
+              {/* Reprocess KL button */}
+              <button
+                onClick={async () => {
+                  const limitStr = prompt('How many groups to reprocess?', '50');
+                  if (!limitStr) return;
+                  const limit = parseInt(limitStr, 10);
+                  if (isNaN(limit) || limit <= 0) {
+                    alert('Please enter a valid positive number.');
+                    return;
+                  }
+
+                  if (!confirm(`Reprocess the latest ${limit} groups?`)) return;
+
+                  try {
+                    // Show a temporary loader
+                    const btn = event.currentTarget;
+                    const oldText = btn.innerText;
+                    btn.disabled = true;
+                    btn.innerText = 'Reprocessing...';
+
+                    const res = await fetch(`${API_BASE}/dashboard/api/reprocess-latest-groups?limit=${limit}`, {
+                      method: 'POST',
+                    });
+
+                    const data = await res.json();
+                    if (res.ok) {
+                      alert(`✅ Queued ${data.queued} groups for reprocessing.`);
+                    } else {
+                      alert(`❌ Failed: ${data.detail || JSON.stringify(data)}`);
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert('Failed to start reprocess. Check console for details.');
+                  } finally {
+                    // Restore button
+                    const btn = event.currentTarget;
+                    btn.disabled = false;
+                    btn.innerText = 'Regen groups with KL';
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  background: 'rgba(239,68,68,0.15)',
+                  color: '#f87171',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.25)')}
+                onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.15)')}
+              >
+                Regen groups with KL
+              </button>
+
+              {/* Open Playground button */}
               <button
                 onClick={() => {
-
                   window.location.href = '/process';
                 }}
                 style={{

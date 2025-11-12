@@ -8,8 +8,11 @@ export default function GroupCard({ group, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [modalImage, setModalImage] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReprocessing, setIsReprocessing] = useState(false);
 
-  const API_BASE = 'https://weclick.dev.api.yonderwonder.ai';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+
+  const [reprocessImage, setReprocessImage] = useState(null);
 
   const createdAt = new Intl.DateTimeFormat('en-IN', {
     timeZone: 'Asia/Kolkata',
@@ -31,7 +34,7 @@ export default function GroupCard({ group, onDelete }) {
       setIsDeleting(true);
       const res = await fetch(`${API_BASE}/dashboard/api/groups/${group.group_id}/input-images`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete group');
-      if (onDelete) onDelete(group.group_id); // Parent callback to remove from UI
+      if (onDelete) onDelete(group.group_id);
     } catch (err) {
       alert('❌ Error deleting group: ' + err.message);
     } finally {
@@ -39,7 +42,67 @@ export default function GroupCard({ group, onDelete }) {
     }
   };
 
-  // 🌌 Glassmorphic styles
+  // Reprocess KL handler
+  const handleReprocessKL = async (e) => {
+    e.stopPropagation();
+
+    if (!group.input_images || group.input_images.length < 2) {
+      alert('❌ Need at least 2 input images to reprocess');
+      return;
+    }
+
+    const prompt = group.output_images?.[0]?.enhanced_prompt ||
+                  group.output_images?.[0]?.prompt ||
+                  group.prompt || '';
+
+    if (!prompt) {
+      alert('❌ No prompt available for reprocessing');
+      return;
+    }
+
+    if (!confirm(`Reprocess Group #${group.group_id} with KL model?`)) return;
+
+    try {
+      setIsReprocessing(true);
+
+      // Add placeholder for loading image
+      setReprocessImage({ url: null, status: 'processing' });
+
+      const img1Response = await fetch(group.input_images[0].url);
+      const img2Response = await fetch(group.input_images[1].url);
+      const img1Blob = await img1Response.blob();
+      const img2Blob = await img2Response.blob();
+
+      const formData = new FormData();
+      formData.append('img_1', img1Blob, 'input1.jpg');
+      formData.append('img_2', img2Blob, 'input2.jpg');
+      formData.append('group_id', group.group_id.toString());
+      formData.append('prompt', prompt);
+
+      const res = await fetch(`${API_BASE}/dashboard/api/reprocess/kl/group`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to reprocess group');
+      }
+
+      const result = await res.json();
+
+      // Update loader image with real result
+      setReprocessImage({ url: result.result_url, status: 'done' });
+
+    } catch (err) {
+      // Update placeholder with error message
+      setReprocessImage({ url: null, status: 'error' });
+      alert('❌ Error reprocessing group: ' + err.message);
+    } finally {
+      setIsReprocessing(false);
+    }
+  };
+
   const cardStyle = {
     background: 'rgba(17, 25, 40, 0.7)',
     backdropFilter: 'blur(10px)',
@@ -103,6 +166,20 @@ export default function GroupCard({ group, onDelete }) {
     transition: 'all 0.3s ease',
   };
 
+  const reprocessButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 10px',
+    background: 'rgba(168,85,247,0.15)',
+    color: '#c084fc',
+    border: '1px solid rgba(168,85,247,0.4)',
+    borderRadius: '8px',
+    fontSize: '13px',
+    cursor: isReprocessing ? 'not-allowed' : 'pointer',
+    transition: 'all 0.3s ease',
+  };
+
   const qualityCheckStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -117,10 +194,7 @@ export default function GroupCard({ group, onDelete }) {
     cursor: isDeleting ? 'not-allowed' : 'pointer',
     transition: 'all 0.3s ease',
     marginBottom: '10px',
-
   };
-
-
 
   const paidCheckStyle = {
     display: 'flex',
@@ -132,21 +206,9 @@ export default function GroupCard({ group, onDelete }) {
     cursor: isDeleting ? 'not-allowed' : 'pointer',
     transition: 'all 0.3s ease',
     width: '100px'
-
   };
 
   const promptStyle = {
-    fontSize: '13px',
-    color: '#e2e8f0',
-    background: 'rgba(255,255,255,0.05)',
-    padding: '10px 14px',
-    borderRadius: '10px',
-    wordBreak: 'break-word',
-    border: '1px solid rgba(255,255,255,0.05)',
-    marginBottom: '20px',
-  };
-
-  const qualityStyle = {
     fontSize: '13px',
     color: '#e2e8f0',
     background: 'rgba(255,255,255,0.05)',
@@ -187,7 +249,6 @@ export default function GroupCard({ group, onDelete }) {
     transition: 'transform 0.2s ease',
   };
 
-  // 🖼️ Render input/output image sections
   const renderImages = (title, images) => (
     <div style={{ marginBottom: '20px' }}>
       <p
@@ -277,88 +338,80 @@ export default function GroupCard({ group, onDelete }) {
               <div style={metaStyle}>
                 <span>Time (IST): {createdAt}</span>
                 <span>User Id: {group.created_by}</span>
-                <span>Email: {group.user_email}
-                </span>
+                <span>Email: {group.user_email}</span>
                 <span style={paidCheckStyle}>
-                  {group.is_paid && <p>
-                    Paid User
-                  </p>
-                  }
+                  {group.is_paid && <p>Paid User</p>}
                 </span>
-
-
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={statsStyle}>
-
-
                 <span>Inputs: {group.input_count}</span>
                 <span>Outputs: {group.output_count}</span>
-               
-
               </div>
 
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
 
-<button
-  onClick={(e) => {
-    e.stopPropagation();
+                  const input1 = group.input_images?.[0]?.url || '';
+                  const input2 = group.input_images?.[1]?.url || '';
 
+                  const prompt =
+                    group.output_images?.[0]?.prompt ||
+                    group.output_images?.[0]?.enhanced_prompt ||
+                    group.prompt ||
+                    '';
 
-    const input1 = group.input_images?.[0]?.url || '';
-    const input2 = group.input_images?.[1]?.url || '';
+                  const params = new URLSearchParams({
+                    prompt: prompt,
+                    input1: input1,
+                    input2: input2,
+                  });
 
-    const prompt =
-      group.output_images?.[0]?.prompt ||
-      group.output_images?.[0]?.enhanced_prompt ||
-      group.prompt ||
-      '';
+                  router.push(`/process?${params.toString()}`);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 10px',
+                  background: 'rgba(37,99,235,0.15)',
+                  color: '#60a5fa',
+                  border: '1px solid rgba(37,99,235,0.4)',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                Playground
+              </button>
 
+              <button
+                onClick={handleReprocessKL}
+                disabled={isReprocessing}
+                style={{
+                  ...reprocessButtonStyle,
+                  opacity: isReprocessing ? 0.5 : 1,
+                }}
+              >
+                <Download size={14} />
+                {isReprocessing ? 'Reprocessing...' : 'Regen with KL'}
+              </button>
 
-    console.log('Input1:', input1);
-    console.log('Input2:', input2);
-
-    const params = new URLSearchParams({
-      prompt: prompt,
-      input1: input1,
-      input2: input2,
-    });
-
-    router.push(`/process?${params.toString()}`);
-  }}
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '6px 10px',
-    background: 'rgba(37,99,235,0.15)',
-    color: '#60a5fa',
-    border: '1px solid rgba(37,99,235,0.4)',
-    borderRadius: '8px',
-    fontSize: '13px',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-  }}
->
-   Playground
-</button>
-
-
-
-
-<button
-  onClick={handleDelete}
-  disabled={isDeleting}
-  style={{
-    ...deleteButtonStyle,
-    opacity: isDeleting ? 0.5 : 1,
-  }}
->
-  <Trash2 size={14} />
-  {isDeleting ? 'Deleting Inputs...' : 'Delete Inputs'}
-</button>
-
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                style={{
+                  ...deleteButtonStyle,
+                  opacity: isDeleting ? 0.5 : 1,
+                }}
+              >
+                <Trash2 size={14} />
+                {isDeleting ? 'Deleting Inputs...' : 'Delete Inputs'}
+              </button>
 
               {expanded ? (
                 <ChevronUp size={20} color="#94a3b8" />
@@ -369,28 +422,34 @@ export default function GroupCard({ group, onDelete }) {
           </div>
 
           {groupPrompt && <div style={promptStyle}>Prompt: {groupPrompt}</div>}
-
         </div>
 
         <div style={contentStyle}>
           {enhancedGroupPrompt && (
             <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>
           )}
-           <span style={qualityCheckStyle}>
-                  {group.quality_summary
-                    ? group.quality_summary
-                      .replace(/_/g, ' ')
-                      .replace(/\b\w/g, c => c.toUpperCase())
-                    : 'No Quality Checker Data Available'}
-
-                </span>
+          <span style={qualityCheckStyle}>
+            {group.quality_summary
+              ? group.quality_summary
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, c => c.toUpperCase())
+              : 'No Quality Checker Data Available'}
+          </span>
           {renderImages('Input Images', group.input_images)}
           {group.output_images.length > 0 && <div style={dividerStyle}></div>}
           {renderImages('Generated Images', group.output_images)}
+          <>
+            {group.input_images.length > 0 && <div style={dividerStyle}></div>}
+            {renderImages('Kontext Lora Generation', [
+              ...(group.kl_processed_path
+                ? [{ url: group.kl_processed_path, status: 'done' }]
+                : []),
+              ...(reprocessImage ? [reprocessImage] : [])
+            ])}
+          </>
         </div>
       </div>
 
-      {/* 🖼️ Full-screen image modal */}
       {modalImage && (
         <div
           style={{
@@ -452,14 +511,12 @@ export default function GroupCard({ group, onDelete }) {
             <button
               onClick={() => {
                 const link = document.createElement('a');
-                link.href = modalImage; // The SAS URL from backend
+                link.href = modalImage;
                 link.download = `image_${Date.now()}.jpg`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
               }}
-
-
               style={{
                 position: 'absolute',
                 bottom: '20px',
@@ -480,7 +537,6 @@ export default function GroupCard({ group, onDelete }) {
               <Download size={16} />
               Download
             </button>
-
           </div>
         </div>
       )}
