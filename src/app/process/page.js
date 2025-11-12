@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, memo } from "react";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
+import { ENV_CONFIG } from "../../../config";
 
 
 const DARK_BG_COLOR = "#1a1a2e";
@@ -23,8 +24,11 @@ const glassStyle = {
 };
 
 
+
+
 const FileUploadCard = memo(({ label, file, setFile }) => {
   const [preview, setPreview] = useState(null);
+
 
   useEffect(() => {
     if (file) {
@@ -166,15 +170,20 @@ export default function ProcessPage() {
   const [authorized, setAuthorized] = useState(false);
   const [preloading, setPreloading] = useState(true);
 
-const USER_ID = process.env.NEXT_PUBLIC_USER_ID;
-const AUTH_TOKEN = process.env.NEXT_PUBLIC_AUTH_TOKEN;
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+    const [env, setEnv] = useState("dev"); // default dev
+  const { API_BASE, AUTH_TOKEN, USER_ID } = ENV_CONFIG[env];
+
+// const USER_ID = process.env.NEXT_PUBLIC_USER_ID;
+// const AUTH_TOKEN = process.env.NEXT_PUBLIC_AUTH_TOKEN;
+// const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
   const normalizeHeight = (value, min, max) => {
     const raw = 0.4 + ((value - min) / (max - min)) * (1.0 - 0.4);
     return Math.round(raw * 10) / 10;
   };
 
+
+   const toggleEnv = () => setEnv(env === "dev" ? "prod" : "dev");
 
   const handleClear = useCallback(() => {
     setPrompt("");
@@ -765,6 +774,10 @@ useEffect(() => {
           >
             Status & Output (USES DEV SERVER)
           </h2>
+
+           <button onClick={toggleEnv}>
+        Switch to {env === "dev" ? "Prod" : "Dev"}
+      </button>
 
           {/* Progress and Timings */}
           <div style={{ minHeight: "100px", marginBottom: "20px" }}>
