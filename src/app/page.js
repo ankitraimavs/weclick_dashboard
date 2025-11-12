@@ -23,7 +23,7 @@ const firebaseConfig = {
 };
 
 const allowedDomain = process.env.NEXT_PUBLIC_ALLOWED_DOMAIN;
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_DEV;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
