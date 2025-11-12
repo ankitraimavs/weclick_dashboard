@@ -253,19 +253,72 @@ export default function DashboardPage() {
                   outline: 'none',
                 }}
               />
-              <button
-                onClick={() => (window.location.href = '/process')}
-                style={{
-                  background: 'rgba(37,99,235,0.15)',
-                  color: '#60a5fa',
-                  border: '1px solid rgba(37,99,235,0.4)',
-                  borderRadius: 10,
-                  padding: '10px 16px',
-                  cursor: 'pointer',
-                }}
-              >
-                Open Playground
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                {/* Reprocess KL Button */}
+                <button
+                  onClick={async (event) => {
+                    const limitStr = prompt('How many groups to reprocess?', '50');
+                    if (!limitStr) return;
+                    const limit = parseInt(limitStr, 10);
+                    if (isNaN(limit) || limit <= 0) {
+                      alert('Please enter a valid number greater than 0.');
+                      return;
+                    }
+
+                    if (!confirm(`Are you sure you want to reprocess the latest ${limit} groups?`)) return;
+
+                    const btn = event.currentTarget;
+                    const oldText = btn.innerText;
+                    btn.disabled = true;
+                    btn.innerText = 'Reprocessing...';
+
+                    try {
+                      const res = await fetch(`${API_BASE}/dashboard/api/reprocess-latest-groups?limit=${limit}`, {
+                        method: 'POST',
+                      });
+                      const data = await res.json();
+
+                      if (res.ok) {
+                        alert(`✅ Successfully queued ${data.queued || limit} groups for reprocessing.`);
+                      } else {
+                        alert(`❌ Failed: ${data.detail || JSON.stringify(data)}`);
+                      }
+                    } catch (err) {
+                      console.error(err);
+                      alert('❌ Error starting reprocess. Check console for details.');
+                    } finally {
+                      btn.disabled = false;
+                      btn.innerText = oldText;
+                    }
+                  }}
+                  style={{
+                    background: 'rgba(239,68,68,0.15)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239,68,68,0.4)',
+                    borderRadius: 10,
+                    padding: '10px 16px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Regenerate with KL
+                </button>
+
+                {/* Open Playground Button */}
+                <button
+                  onClick={() => (window.location.href = '/process')}
+                  style={{
+                    background: 'rgba(37,99,235,0.15)',
+                    color: '#60a5fa',
+                    border: '1px solid rgba(37,99,235,0.4)',
+                    borderRadius: 10,
+                    padding: '10px 16px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Open Playground
+                </button>
+              </div>
+
             </div>
 
             <div
@@ -318,7 +371,7 @@ export default function DashboardPage() {
             <button
               onClick={() => {
                 setShowMode('message');
-                loadPaidUsers(); 
+                loadPaidUsers();
               }}
               style={{
                 backgroundColor: '#10b981',
