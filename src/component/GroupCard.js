@@ -329,6 +329,65 @@ export default function GroupCard({ group, onDelete }) {
     </div>
   );
 
+ const renderSingleImage = (title, imageUrl) => (
+  <div style={{ marginBottom: '20px' }}>
+    <p
+      style={{
+        fontSize: '14px',
+        fontWeight: 600,
+        color: '#e2e8f0',
+        marginBottom: '8px',
+      }}
+    >
+      {title}
+    </p>
+
+    {imageUrl ? (
+      <div
+        style={{
+          height: '120px',
+          width: '120px',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          cursor: 'pointer',
+          transition: 'transform 0.2s',
+        }}
+        onClick={() => setModalImage(imageUrl)}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+      >
+        <img
+          src={imageUrl}
+          alt={title}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => {
+            e.currentTarget.src = '';
+            e.currentTarget.parentElement.innerHTML =
+              `<div style="height:120px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);color:#f87171;font-size:13px;border-radius:10px;">Not Available</div>`;
+          }}
+        />
+      </div>
+    ) : (
+      <div
+        style={{
+          height: '120px',
+          width: '120px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '13px',
+          color: '#f87171',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '10px',
+        }}
+      >
+        Not Available
+      </div>
+    )}
+  </div>
+);
+
+
   const groupPrompt = group.output_images.find((img) => img.prompt)?.prompt || null;
   const enhancedGroupPrompt =
     group.output_images.find((img) => img.enhanced_prompt)?.enhanced_prompt || null;
@@ -465,7 +524,12 @@ export default function GroupCard({ group, onDelete }) {
           </span>
           {renderImages('Input Images', group.input_images)}
           {group.output_images.length > 0 && <div style={dividerStyle}></div>}
+          {renderSingleImage('Masked Image', group.mask_url)}
+          {group.output_images.length > 0 && <div style={dividerStyle}></div>}
           {renderImages('Generated Images', group.output_images)}
+
+
+     
           <>
             {group.input_images.length > 0 && <div style={dividerStyle}></div>}
             {renderImages('Kontext Lora Generation', [
