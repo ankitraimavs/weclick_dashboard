@@ -10,7 +10,7 @@ export default function GroupCard({ group, onDelete }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReprocessing, setIsReprocessing] = useState(false);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_DEV;
 
   const [reprocessImage, setReprocessImage] = useState(null);
 
@@ -356,55 +356,78 @@ export default function GroupCard({ group, onDelete }) {
                 <span>Outputs: {group.output_count}</span>
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
+              {group.input_images && group.input_images.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
 
-                  const input1 = group.input_images?.[0]?.url || '';
-                  const input2 = group.input_images?.[1]?.url || '';
+                    const input1 = group.input_images?.[0]?.url || '';
+                    const input2 = group.input_images?.[1]?.url || '';
 
-                  const prompt =
-                    group.output_images?.[0]?.prompt ||
-                    group.output_images?.[0]?.enhanced_prompt ||
-                    group.prompt ||
-                    '';
+                    const prompt =
+                      group.output_images?.[0]?.prompt ||
+                      group.output_images?.[0]?.enhanced_prompt ||
+                      group.prompt ||
+                      '';
 
-                  const params = new URLSearchParams({
-                    prompt: prompt,
-                    input1: input1,
-                    input2: input2,
-                  });
+                    const params = new URLSearchParams({
+                      prompt: prompt,
+                      input1: input1,
+                      input2: input2,
+                    });
 
-                  router.push(`/process?${params.toString()}`);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 10px',
-                  background: 'rgba(37,99,235,0.15)',
-                  color: '#60a5fa',
-                  border: '1px solid rgba(37,99,235,0.4)',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                Playground
-              </button>
+                    router.push(`/process?${params.toString()}`);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 10px',
+                    background: 'rgba(37,99,235,0.15)',
+                    color: '#60a5fa',
+                    border: '1px solid rgba(37,99,235,0.4)',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  Playground
+                </button>
+              )}
 
-              <button
-                onClick={handleReprocessKL}
-                disabled={isReprocessing}
-                style={{
-                  ...reprocessButtonStyle,
-                  opacity: isReprocessing ? 0.5 : 1,
-                }}
-              >
-                <Download size={14} />
-                {isReprocessing ? 'Reprocessing...' : 'Regen with KL'}
-              </button>
+              {group.input_images && group.input_images.length > 0 ? (
+                !group.kl_processed_path ? (
+                  <button
+                    onClick={handleReprocessKL}
+                    disabled={isReprocessing}
+                    style={{
+                      ...reprocessButtonStyle,
+                      opacity: isReprocessing ? 0.5 : 1,
+                    }}
+                  >
+                    <Download size={14} />
+                    {isReprocessing ? 'Reprocessing...' : 'Regenerate with KL'}
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: 'rgba(34,197,94,0.1)',
+                      color: '#4ade80',
+                      border: '1px solid rgba(34,197,94,0.3)',
+                      borderRadius: 8,
+                      padding: '6px 10px',
+                      fontSize: 13,
+                      fontWeight: 500,
+                    }}
+                  >
+                    KL version exists
+                  </div>
+                )
+              ) : null}
 
               <button
                 onClick={handleDelete}
