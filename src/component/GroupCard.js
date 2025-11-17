@@ -422,6 +422,8 @@ export default function GroupCard({ group, onDelete }) {
 
                     const input1 = group.input_images?.[0]?.url || '';
                     const input2 = group.input_images?.[1]?.url || '';
+                    const input3 = group.input_images?.[2]?.url || '';
+                    const input4 = group.input_images?.[3]?.url || '';
 
                     const prompt =
                       group.output_images?.[0]?.prompt ||
@@ -433,6 +435,8 @@ export default function GroupCard({ group, onDelete }) {
                       prompt: prompt,
                       input1: input1,
                       input2: input2,
+                      input3: input3,
+                      input4: input4,
                     });
 
                     router.push(`/process?${params.toString()}`);

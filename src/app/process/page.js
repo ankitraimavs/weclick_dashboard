@@ -2,33 +2,26 @@
 
 import { useState, useCallback, useEffect, memo } from "react";
 import axios from "axios";
-import { useSearchParams } from "next/navigation";
 import { ENV_CONFIG } from "../../../config";
 
-
 const DARK_BG_COLOR = "#1a1a2e";
-const CARD_BG = "rgba(40, 40, 60, 0.6)"; 
+const CARD_BG = "rgba(40, 40, 60, 0.6)";
 const ACCENT_COLOR = "#66b3ff";
 const TEXT_COLOR = "#f0f0f0";
 const BORDER_COLOR = "rgba(255, 255, 255, 0.1)";
 const INPUT_BG = "rgba(255, 255, 255, 0.05)";
-
 
 const glassStyle = {
   background: CARD_BG,
   borderRadius: "16px",
   boxShadow: "0 4px 30px rgba(0, 0, 0, 0.2)",
   backdropFilter: "blur(10px)",
-  WebkitBackdropFilter: "blur(10px)", 
+  WebkitBackdropFilter: "blur(10px)",
   border: `1px solid ${BORDER_COLOR}`,
 };
 
-
-
-
 const FileUploadCard = memo(({ label, file, setFile }) => {
   const [preview, setPreview] = useState(null);
-
 
   useEffect(() => {
     if (file) {
@@ -38,7 +31,7 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
     } else {
       setPreview(null);
     }
-  }, [file]); 
+  }, [file]);
 
   return (
     <div
@@ -65,7 +58,6 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
         {label}
       </label>
 
-
       <input
         type="file"
         accept="image/*"
@@ -79,7 +71,6 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
           borderRadius: "5px",
         }}
       />
-
 
       {file && (
         <div
@@ -95,14 +86,14 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
             onClick={() => setFile(null)}
             style={{
               marginLeft: "10px",
-              background: "rgba(220, 53, 69, 0.2)", 
+              background: "rgba(220, 53, 69, 0.2)",
               border: `1px solid #dc3545`,
-              color: "#ff8080", 
+              color: "#ff8080",
               cursor: "pointer",
               fontSize: "12px",
               padding: "2px 5px",
               borderRadius: "3px",
-              transition: "all 0.2s", 
+              transition: "all 0.2s",
             }}
           >
             Remove
@@ -110,16 +101,15 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
         </div>
       )}
 
-
       <div
         style={{
           width: "200px",
           height: "200px",
           margin: "0 auto",
           borderRadius: "5px",
-          border: `1px solid ${preview ? BORDER_COLOR : "transparent"}`, 
+          border: `1px solid ${preview ? BORDER_COLOR : "transparent"}`,
           overflow: "hidden",
-          background: "#000", 
+          background: "#000",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -134,7 +124,7 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
               width: "100%",
               height: "100%",
               objectFit: "contain",
-              animation: "fadeIn 0.4s ease-out", 
+              animation: "fadeIn 0.4s ease-out",
             }}
           />
         )}
@@ -142,63 +132,60 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
     </div>
   );
 });
-FileUploadCard.displayName = "FileUploadCard"; 
-
+FileUploadCard.displayName = "FileUploadCard";
 
 export default function ProcessPage() {
-  // const searchParams = useSearchParams();
-
-
-  const [prompt, setPrompt] = useState(""); 
-  const [displayPrompt, setDisplayPrompt] = useState(""); 
+  const [prompt, setPrompt] = useState("");
+  const [displayPrompt, setDisplayPrompt] = useState("");
 
   const [height1, setHeight1] = useState(150);
   const [height2, setHeight2] = useState(150);
+  const [height3, setHeight3] = useState(150);
+  const [height4, setHeight4] = useState(150);
+
   const [file1, setFile1] = useState(null);
   const [file2, setFile2] = useState(null);
+  const [file3, setFile3] = useState(null);
+  const [file4, setFile4] = useState(null);
+
   const [error, setError] = useState("");
 
   const [outputImages, setOutputImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
   const [timings, setTimings] = useState([]);
-  // const group_prompt = searchParams.get("prompt") || "";
-  // const incomingInput1 = searchParams.get("input1") || "";
-  // const incomingInput2 = searchParams.get("input2") || "";
 
   const [userEmail, setUserEmail] = useState(null);
   const [authorized, setAuthorized] = useState(false);
   const [preloading, setPreloading] = useState(true);
 
-    const [env, setEnv] = useState("dev"); // default dev
+  const [env, setEnv] = useState("dev"); // default dev
   const { API_BASE, AUTH_TOKEN, USER_ID } = ENV_CONFIG[env];
-
-// const USER_ID = process.env.NEXT_PUBLIC_USER_ID;
-// const AUTH_TOKEN = process.env.NEXT_PUBLIC_AUTH_TOKEN;
-// const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
   const normalizeHeight = (value, min, max) => {
     const raw = 0.4 + ((value - min) / (max - min)) * (1.0 - 0.4);
     return Math.round(raw * 10) / 10;
   };
 
-
-   const toggleEnv = () => setEnv(env === "dev" ? "prod" : "dev");
+  const toggleEnv = () => setEnv(env === "dev" ? "prod" : "dev");
 
   const handleClear = useCallback(() => {
     setPrompt("");
     setDisplayPrompt("");
     setHeight1(150);
     setHeight2(150);
+    setHeight3(150);
+    setHeight4(150);
     setFile1(null);
     setFile2(null);
+    setFile3(null);
+    setFile4(null);
     setOutputImages([]);
     setLoading(false);
     setProgress("");
     setTimings([]);
     setError("");
   }, []);
-
 
   useEffect(() => {
     const email = localStorage.getItem("email");
@@ -208,44 +195,54 @@ export default function ProcessPage() {
     }
   }, []);
 
-useEffect(() => {
-  const searchParams = new URLSearchParams(window.location.search); // client-side only
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search); // client-side only
 
-  const rawPrompt = searchParams.get("prompt") || "";
-  const decodedPrompt = decodeURIComponent(rawPrompt);
-  setPrompt(decodedPrompt);
-  setDisplayPrompt(decodedPrompt);
+    const rawPrompt = searchParams.get("prompt") || "";
+    const decodedPrompt = decodeURIComponent(rawPrompt);
+    setPrompt(decodedPrompt);
+    setDisplayPrompt(decodedPrompt);
 
-  const incomingInput1 = searchParams.get("input1") || "";
-  const incomingInput2 = searchParams.get("input2") || "";
+    const incomingInput1 = searchParams.get("input1") || "";
+    const incomingInput2 = searchParams.get("input2") || "";
+    const incomingInput3 = searchParams.get("input3") || "";
+    const incomingInput4 = searchParams.get("input4") || "";
 
-  const fetchImage = async (url) => {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return new File([blob], "input_from_group.jpg", { type: blob.type });
-  };
+    const fetchImage = async (url) => {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      // create a name based on url so uploads have distinct names
+      const name = url.split("/").pop().split("?")[0] || "input_from_group.jpg";
+      return new File([blob], name, { type: blob.type });
+    };
 
-  const preloadImages = async () => {
-    try {
-      if (incomingInput1) {
-        const file1Obj = await fetchImage(incomingInput1);
-        setFile1(file1Obj);
+    const preloadImages = async () => {
+      try {
+        if (incomingInput1) {
+          const file1Obj = await fetchImage(incomingInput1);
+          setFile1(file1Obj);
+        }
+        if (incomingInput2) {
+          const file2Obj = await fetchImage(incomingInput2);
+          setFile2(file2Obj);
+        }
+        if (incomingInput3) {
+          const file3Obj = await fetchImage(incomingInput3);
+          setFile3(file3Obj);
+        }
+        if (incomingInput4) {
+          const file4Obj = await fetchImage(incomingInput4);
+          setFile4(file4Obj);
+        }
+      } catch (err) {
+        console.error("Error loading input images:", err);
+      } finally {
+        setPreloading(false);
       }
-      if (incomingInput2) {
-        const file2Obj = await fetchImage(incomingInput2);
-        setFile2(file2Obj);
-      }
-    } catch (err) {
-      console.error("Error loading input images:", err);
-    } finally {
-      setPreloading(false);
-    }
-  };
+    };
 
-  preloadImages();
-}, []);
-
-
+    preloadImages();
+  }, []);
 
   if (preloading) {
     return (
@@ -301,205 +298,206 @@ useEffect(() => {
     );
   }
 
+const handleProcess = async () => {
 
-  const handleProcess = async () => {
-    if (!file1 || !file2)
-      return alert("Please upload both Image 1 and Image 2.");
-    setError("");
-
-    const filesToUpload = [file1, file2];
-
-    setLoading(true);
-    setOutputImages([]);
-    setTimings([]);
-    let stepTimings = [];
-    
-
-    let processingStartTime = 0;
-
-    try {
-      const headers = {
-        Authorization: `Bearer ${AUTH_TOKEN}`,
-      };
+  if (!file1 || !file2) return alert("Please upload the first two images.");
+  setError("");
 
 
-      let start = performance.now();
-      setProgress("Creating group...");
-      const groupRes = await axios.post(
-        `${API_BASE}/v2/group/create`,
-        null,
-        { params: { user_id: USER_ID }, headers }
-      );
-      const groupId = groupRes.data.groupId;
-      let end = performance.now();
-      stepTimings.push({
-        step: "Create group",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
+  const filesToUpload = [file1, file2, file3, file4].filter(Boolean);
 
+  setLoading(true);
+  setOutputImages([]);
+  setTimings([]);
+  let stepTimings = [];
 
-      start = performance.now();
-      setProgress("Generating upload URLs...");
-      const uploads = await Promise.all(
-        filesToUpload.map(async (file) => {
-          const formData = new FormData();
-          formData.append("user_id", USER_ID.toString());
-          formData.append("filename", file.name);
+  let processingStartTime = 0;
 
-          const res = await axios.post(
-            `${API_BASE}/v2/uploads/generate-upload-url`,
-            formData,
-            { headers }
-          );
-          return res.data;
+  try {
+    const headers = {
+      Authorization: `Bearer ${AUTH_TOKEN}`,
+    };
+
+    // Step 1: Create group
+    let start = performance.now();
+    setProgress("Creating group...");
+    const groupRes = await axios.post(
+      `${API_BASE}/v2/group/create`,
+      null,
+      { params: { user_id: USER_ID }, headers }
+    );
+    const groupId = groupRes.data.groupId;
+    let end = performance.now();
+    stepTimings.push({
+      step: "Create group",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
+
+    // Step 2: Generate upload URLs
+    start = performance.now();
+    setProgress("Generating upload URLs...");
+    const uploads = await Promise.all(
+      filesToUpload.map(async (file) => {
+        const formData = new FormData();
+        formData.append("user_id", USER_ID.toString());
+        formData.append("filename", file.name);
+
+        const res = await axios.post(
+          `${API_BASE}/v2/uploads/generate-upload-url`,
+          formData,
+          { headers }
+        );
+        return res.data;
+      })
+    );
+    end = performance.now();
+    stepTimings.push({
+      step: "Generate upload URLs",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
+    const blobPaths = uploads.map((u) => u.blob_path);
+
+    // Step 3: Upload images
+    start = performance.now();
+    setProgress("Uploading images...");
+    await Promise.all(
+      uploads.map((u, i) =>
+        fetch(u.upload_url, {
+          method: "PUT",
+          headers: {
+            "x-ms-blob-type": "BlockBlob",
+            "Content-Type": filesToUpload[i].type,
+          },
+          body: filesToUpload[i],
         })
-      );
-      end = performance.now();
-      stepTimings.push({
-        step: "Generate upload URLs",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
-      const blobPaths = uploads.map((u) => u.blob_path);
+      )
+    );
+    end = performance.now();
+    stepTimings.push({
+      step: "Upload images",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
 
+    // Step 4: Finalize uploads
+    start = performance.now();
+    setProgress("Finalizing uploads...");
+    const finalizeForm = new FormData();
+    blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
+    finalizeForm.append("user_id", USER_ID.toString());
+    finalizeForm.append("group_id", groupId.toString());
 
-      start = performance.now();
-      setProgress("Uploading images...");
-      await Promise.all(
-        uploads.map((u, i) =>
-          fetch(u.upload_url, {
-            method: "PUT",
-            headers: {
-              "x-ms-blob-type": "BlockBlob",
-              "Content-Type": filesToUpload[i].type,
-            },
-            body: filesToUpload[i],
-          })
-        )
-      );
-      end = performance.now();
-      stepTimings.push({
-        step: "Upload images",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
+    await axios.post(
+      `${API_BASE}/v2/uploads/uploads-complete`,
+      finalizeForm,
+      { headers }
+    );
+    end = performance.now();
+    stepTimings.push({
+      step: "Finalize uploads",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
 
+    // Step 5: Start processing
+    start = performance.now();
+    setProgress("Starting processing...");
+    const normalizedHeights = [
+      normalizeHeight(height1, 140, 160),
+      normalizeHeight(height2, 140, 160),
+      normalizeHeight(height3, 140, 160),
+      normalizeHeight(height4, 140, 160),
+    ].slice(0, filesToUpload.length); // only for uploaded files
 
-      start = performance.now();
-      setProgress("Finalizing uploads...");
-      const finalizeForm = new FormData();
-      blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
-      finalizeForm.append("user_id", USER_ID.toString());
-      finalizeForm.append("group_id", groupId.toString());
+    const promptToSend = displayPrompt.trim() || prompt;
 
-      await axios.post(
-        `${API_BASE}/v2/uploads/uploads-complete`,
-        finalizeForm,
-        { headers }
-      );
-      end = performance.now();
-      stepTimings.push({
-        step: "Finalize uploads",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
+    const processRes = await axios.post(
+      `${API_BASE}/v2/process/groups/${groupId}`,
+      {
+        prompt: promptToSend,
+        mode: "full_body",
+        generations: filesToUpload.length, // match uploaded files
+        height_index_list: normalizedHeights,
+      },
+      { headers: { ...headers, "Content-Type": "application/json" } }
+    );
 
+    const reqIds = processRes.data.request_ids;
+    if (!reqIds || reqIds.length === 0)
+      throw new Error("No request IDs returned from processing API.");
+    end = performance.now();
+    stepTimings.push({
+      step: "Start processing",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
 
-      start = performance.now();
-      setProgress("Starting processing...");
-      const normalizedHeights = [
-        normalizeHeight(height1, 140, 160),
-        normalizeHeight(height2, 140, 160),
-      ];
+    processingStartTime = performance.now();
 
-      const processRes = await axios.post(
-        `${API_BASE}/v2/process/groups/${groupId}`,
-        {
-          prompt, 
-          mode: "full_body",
-          generations: 4,
-          height_index_list: normalizedHeights,
-        },
-        { headers: { ...headers, "Content-Type": "application/json" } }
-      );
+    setProgress("Processing images (may take a few minutes)...");
+    const pollStatus = async (reqIds) => {
+      try {
+        const params = new URLSearchParams();
+        reqIds.forEach((id) => params.append("request_ids", id));
 
-      const reqIds = processRes.data.request_ids;
-      if (!reqIds || reqIds.length === 0)
-        throw new Error("No request IDs returned from processing API.");
-      end = performance.now();
-      stepTimings.push({
-        step: "Start processing",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
-      
-
-      processingStartTime = performance.now(); 
-
-
-      setProgress("Processing images (may take a few minutes)...");
-      const pollStatus = async (reqIds) => {
-        try {
-          const params = new URLSearchParams();
-          reqIds.forEach((id) => params.append("request_ids", id));
-
-          const statusRes = await axios.get(
-            `${API_BASE}/process/status?${params.toString()}`,
-            {
-              headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-            }
-          );
-
-          const { status, outputs } = statusRes.data;
-
-          if (status === "done") {
-
-            const generationEnd = performance.now();
-            stepTimings.push({
-                step: "Pipeline Processing",
-                time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
-            });
-            
-            const doneUrls = outputs
-              .filter((o) => o.status === "done" && o.url)
-              .map((o) => o.url);
-            setOutputImages(doneUrls);
-            setProgress("Processing complete.");
-            setLoading(false);
-            setTimings(stepTimings); 
-          } else if (status === "error") {
-            setProgress("Error during processing. Try again.");
-            setLoading(false);
-          } else {
-            setTimeout(() => pollStatus(reqIds), 8000);
+        const statusRes = await axios.get(
+          `${API_BASE}/process/status?${params.toString()}`,
+          {
+            headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
           }
-        } catch (err) {
-          console.error("Polling error:", err);
-          setProgress("Polling encountered an error. Retrying...");
+        );
+
+        const { status, outputs } = statusRes.data;
+
+        if (status === "done") {
+          const generationEnd = performance.now();
+          stepTimings.push({
+            step: "Pipeline Processing",
+            time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
+          });
+
+          const doneUrls = outputs
+            .filter((o) => o.status === "done" && o.url)
+            .map((o) => o.url);
+          setOutputImages(doneUrls);
+          setProgress("Processing complete.");
+          setLoading(false);
+          setTimings(stepTimings);
+        } else if (status === "error") {
+          setProgress("Error during processing. Try again.");
+          setLoading(false);
+        } else {
           setTimeout(() => pollStatus(reqIds), 8000);
         }
-      };
-      pollStatus(reqIds);
-    } catch (err) {
-      console.error(err);
-
-      let message = "Something went wrong. Please retry.";
-
-      if (axios.isAxiosError(err)) {
-        if (err.response) {
-          message = `Error ${err.response.status}: ${
-            err.response.data?.message || err.response.statusText
-          }`;
-        } else if (err.request) {
-          message = "Network error: No response from server.";
-        } else {
-          message = `Request error: ${err.message}`;
-        }
-      } else if (err instanceof Error) {
-        message = err.message;
+      } catch (err) {
+        console.error("Polling error:", err);
+        setProgress("Polling encountered an error. Retrying...");
+        setTimeout(() => pollStatus(reqIds), 8000);
       }
+    };
+    pollStatus(reqIds);
+  } catch (err) {
+    console.error(err);
 
-      setError(message);
-      setProgress("Something went wrong. Please retry.");
-      setLoading(false);
+    let message = "Something went wrong. Please retry.";
+
+    if (axios.isAxiosError(err)) {
+      if (err.response) {
+        message = `Error ${err.response.status}: ${
+          err.response.data?.message || err.response.statusText
+        }`;
+      } else if (err.request) {
+        message = "Network error: No response from server.";
+      } else {
+        message = `Request error: ${err.message}`;
+      }
+    } else if (err instanceof Error) {
+      message = err.message;
     }
-  };
+
+    setError(message);
+    setProgress("Something went wrong. Please retry.");
+    setLoading(false);
+  }
+};
+
 
   // --- Unauthorized Screen (Styled) ---
   if (!authorized) {
@@ -594,9 +592,13 @@ useEffect(() => {
             >
               1. Upload Images
             </h2>
-            <div style={{ display: "flex", gap: "15px" }}>
+
+            {/* 2x2 grid of upload boxes */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
               <FileUploadCard label="Image 1" file={file1} setFile={setFile1} />
               <FileUploadCard label="Image 2" file={file2} setFile={setFile2} />
+              <FileUploadCard label="Image 3" file={file3} setFile={setFile3} />
+              <FileUploadCard label="Image 4" file={file4} setFile={setFile4} />
             </div>
           </div>
 
@@ -645,8 +647,8 @@ useEffect(() => {
             </h2>
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-around",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
                 gap: "15px",
               }}
             >
@@ -679,6 +681,7 @@ useEffect(() => {
                   }}
                 />
               </div>
+
               <div style={{ flex: 1 }}>
                 <label
                   style={{
@@ -694,6 +697,66 @@ useEffect(() => {
                   type="number"
                   value={height2}
                   onChange={(e) => setHeight2(Number(e.target.value))}
+                  min="140"
+                  max="160"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "5px",
+                    border: `1px solid ${BORDER_COLOR}`,
+                    outline: "none",
+                    background: INPUT_BG,
+                    color: TEXT_COLOR,
+                    transition: "background 0.2s, border-color 0.2s",
+                  }}
+                />
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontSize: "14px",
+                    color: TEXT_COLOR,
+                  }}
+                >
+                  Image 3:
+                </label>
+                <input
+                  type="number"
+                  value={height3}
+                  onChange={(e) => setHeight3(Number(e.target.value))}
+                  min="140"
+                  max="160"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "5px",
+                    border: `1px solid ${BORDER_COLOR}`,
+                    outline: "none",
+                    background: INPUT_BG,
+                    color: TEXT_COLOR,
+                    transition: "background 0.2s, border-color 0.2s",
+                  }}
+                />
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontSize: "14px",
+                    color: TEXT_COLOR,
+                  }}
+                >
+                  Image 4:
+                </label>
+                <input
+                  type="number"
+                  value={height4}
+                  onChange={(e) => setHeight4(Number(e.target.value))}
                   min="140"
                   max="160"
                   style={{
@@ -725,12 +788,10 @@ useEffect(() => {
                   loading || !file1 || !file2
                     ? "rgba(100, 100, 100, 0.6)"
                     : ACCENT_COLOR,
-                color:
-                  loading || !file1 || !file2 ? "#aaa" : DARK_BG_COLOR,
+                color: loading || !file1 || !file2 ? "#aaa" : DARK_BG_COLOR,
                 fontWeight: "700",
                 fontSize: "16px",
-                cursor:
-                  loading || !file1 || !file2 ? "not-allowed" : "pointer",
+                cursor: loading || !file1 || !file2 ? "not-allowed" : "pointer",
                 transition: "0.2s",
                 boxShadow:
                   loading || !file1 || !file2
@@ -775,9 +836,9 @@ useEffect(() => {
             Status & Output (USES DEV SERVER)
           </h2>
 
-           <button onClick={toggleEnv}>
-        Switch to {env === "dev" ? "Prod" : "Dev"}
-      </button>
+          <button onClick={toggleEnv} style={{ marginBottom: 12 }}>
+            Switch to {env === "dev" ? "Prod" : "Dev"}
+          </button>
 
           {/* Progress and Timings */}
           <div style={{ minHeight: "100px", marginBottom: "20px" }}>
@@ -830,8 +891,7 @@ useEffect(() => {
                 >
                   {timings.map((t, idx) => (
                     <li key={idx} style={{ marginBottom: "3px" }}>
-                      {t.step}:{" "}
-                      <span style={{ color: ACCENT_COLOR }}>{t.time}</span>
+                      {t.step}: <span style={{ color: ACCENT_COLOR }}>{t.time}</span>
                     </li>
                   ))}
                 </ul>
@@ -885,17 +945,11 @@ useEffect(() => {
                         borderRadius: "8px",
                         border: `2px solid ${ACCENT_COLOR}`,
                         transition: "transform 0.2s",
-
-                        // Apply animation without the delay
                         animation: `fadeIn 0.5s ease-out`,
-                        animationFillMode: "both", // Start at opacity 0
+                        animationFillMode: "both",
                       }}
-                      onMouseOver={(e) =>
-                        (e.currentTarget.style.transform = "scale(1.02)")
-                      }
-                      onMouseOut={(e) =>
-                        (e.currentTarget.style.transform = "scale(1)")
-                      }
+                      onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+                      onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
                     />
                   </a>
                 ))}
