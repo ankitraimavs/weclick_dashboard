@@ -162,7 +162,7 @@ export default function ProcessPage() {
   const [authorized, setAuthorized] = useState(false);
   const [preloading, setPreloading] = useState(true);
 
-  const [env, setEnv] = useState("dev"); // default dev
+  const [env, setEnv] = useState("dev");
   const { API_BASE, AUTH_TOKEN, USER_ID } = ENV_CONFIG[env];
 
   const normalizeHeight = (value, min, max) => {
@@ -207,10 +207,6 @@ export default function ProcessPage() {
     const decodedPrompt = decodeURIComponent(rawPrompt);
     setPrompt(decodedPrompt);
     setDisplayPrompt(decodedPrompt);
-    const rawPrompt = searchParams.get("prompt") || "";
-    const decodedPrompt = decodeURIComponent(rawPrompt);
-    setPrompt(decodedPrompt);
-    setDisplayPrompt(decodedPrompt);
 
     const incomingInput1 = searchParams.get("input1") || "";
     const incomingInput2 = searchParams.get("input2") || "";
@@ -220,7 +216,6 @@ export default function ProcessPage() {
     const fetchImage = async (url) => {
       const res = await fetch(url);
       const blob = await res.blob();
-      // create a name based on url so uploads have distinct names
       const name = url.split("/").pop().split("?")[0] || "input_from_group.jpg";
       return new File([blob], name, { type: blob.type });
     };
@@ -308,120 +303,121 @@ export default function ProcessPage() {
   }
 
   const handleProcess = async () => {
-    const uploadedFiles = [file1, file2, file3, file4, file5, file6].filter(Boolean);
+    const filesToUpload = [file1, file2, file3, file4, file5, file6].filter(Boolean);
 
-    if (uploadedFiles.length < 2) {
+    if (filesToUpload.length < 2) {
       return alert("Please upload at least 2 images.");
     }
 
     setLoading(true);
     setOutputImages([]);
     setTimings([]);
+    setError("");
     let stepTimings = [];
-
-
     let processingStartTime = 0;
 
-  try {
-    const headers = {
-      Authorization: `Bearer ${AUTH_TOKEN}`,
-    };
+    try {
+      const headers = {
+        Authorization: `Bearer ${AUTH_TOKEN}`,
+      };
 
-    // Step 1: Create group
-    let start = performance.now();
-    setProgress("Creating group...");
-    const groupRes = await axios.post(
-      `${API_BASE}/v2/group/create`,
-      null,
-      { params: { user_id: USER_ID }, headers }
-    );
-    const groupId = groupRes.data.groupId;
-    let end = performance.now();
-    stepTimings.push({
-      step: "Create group",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
+      // Step 1: Create group
+      let start = performance.now();
+      setProgress("Creating group...");
+      const groupRes = await axios.post(
+        `${API_BASE}/v2/group/create`,
+        null,
+        { params: { user_id: USER_ID }, headers }
+      );
+      const groupId = groupRes.data.groupId;
+      let end = performance.now();
+      stepTimings.push({
+        step: "Create group",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
 
-    // Step 2: Generate upload URLs
-    start = performance.now();
-    setProgress("Generating upload URLs...");
-    const uploads = await Promise.all(
-      filesToUpload.map(async (file) => {
-        const formData = new FormData();
-        formData.append("user_id", USER_ID.toString());
-        formData.append("filename", file.name);
+      // Step 2: Generate upload URLs
+      start = performance.now();
+      setProgress("Generating upload URLs...");
+      const uploads = await Promise.all(
+        filesToUpload.map(async (file) => {
+          const formData = new FormData();
+          formData.append("user_id", USER_ID.toString());
+          formData.append("filename", file.name);
 
-        const res = await axios.post(
-          `${API_BASE}/v2/uploads/generate-upload-url`,
-          formData,
-          { headers }
-        );
-        return res.data;
-      })
-    );
-    end = performance.now();
-    stepTimings.push({
-      step: "Generate upload URLs",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
-    const blobPaths = uploads.map((u) => u.blob_path);
-
-    // Step 3: Upload images
-    start = performance.now();
-    setProgress("Uploading images...");
-    await Promise.all(
-      uploads.map((u, i) =>
-        fetch(u.upload_url, {
-          method: "PUT",
-          headers: {
-            "x-ms-blob-type": "BlockBlob",
-            "Content-Type": filesToUpload[i].type,
-          },
-          body: filesToUpload[i],
+          const res = await axios.post(
+            `${API_BASE}/v2/uploads/generate-upload-url`,
+            formData,
+            { headers }
+          );
+          return res.data;
         })
-      )
-    );
-    end = performance.now();
-    stepTimings.push({
-      step: "Upload images",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
+      );
+      end = performance.now();
+      stepTimings.push({
+        step: "Generate upload URLs",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
+      const blobPaths = uploads.map((u) => u.blob_path);
 
-    // Step 4: Finalize uploads
-    start = performance.now();
-    setProgress("Finalizing uploads...");
-    const finalizeForm = new FormData();
-    blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
-    finalizeForm.append("user_id", USER_ID.toString());
-    finalizeForm.append("group_id", groupId.toString());
+      // Step 3: Upload images
+      start = performance.now();
+      setProgress("Uploading images...");
+      await Promise.all(
+        uploads.map((u, i) =>
+          fetch(u.upload_url, {
+            method: "PUT",
+            headers: {
+              "x-ms-blob-type": "BlockBlob",
+              "Content-Type": filesToUpload[i].type,
+            },
+            body: filesToUpload[i],
+          })
+        )
+      );
+      end = performance.now();
+      stepTimings.push({
+        step: "Upload images",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
 
-    await axios.post(
-      `${API_BASE}/v2/uploads/uploads-complete`,
-      finalizeForm,
-      { headers }
-    );
-    end = performance.now();
-    stepTimings.push({
-      step: "Finalize uploads",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
+      // Step 4: Finalize uploads
+      start = performance.now();
+      setProgress("Finalizing uploads...");
+      const finalizeForm = new FormData();
+      blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
+      finalizeForm.append("user_id", USER_ID.toString());
+      finalizeForm.append("group_id", groupId.toString());
 
-    // Step 5: Start processing
-    start = performance.now();
-    setProgress("Starting processing...");
-    const normalizedHeights = [
-      normalizeHeight(height1, 140, 160),
-      normalizeHeight(height2, 140, 160),
-      normalizeHeight(height3, 140, 160),
-      normalizeHeight(height4, 140, 160),
-    ].slice(0, filesToUpload.length); // only for uploaded files
+      await axios.post(
+        `${API_BASE}/v2/uploads/uploads-complete`,
+        finalizeForm,
+        { headers }
+      );
+      end = performance.now();
+      stepTimings.push({
+        step: "Finalize uploads",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
 
-    const promptToSend = displayPrompt.trim() || prompt;
+      // Step 5: Start processing
+      start = performance.now();
+      setProgress("Starting processing...");
+      const normalizedHeights = [
+        normalizeHeight(height1, 140, 160),
+        normalizeHeight(height2, 140, 160),
+        normalizeHeight(height3, 140, 160),
+        normalizeHeight(height4, 140, 160),
+        normalizeHeight(height5, 140, 160),
+        normalizeHeight(height6, 140, 160),
+      ].slice(0, filesToUpload.length);
+
+      const promptToSend = displayPrompt.trim() || prompt;
 
       const processRes = await axios.post(
         `${API_BASE}/v2/process/groups/${groupId}`,
         {
-          prompt,
+          prompt: promptToSend,
           mode: "full_body",
           generations: 4,
           height_index_list: normalizedHeights,
@@ -438,31 +434,28 @@ export default function ProcessPage() {
         time: ((end - start) / 1000).toFixed(2) + "s",
       });
 
-
       processingStartTime = performance.now();
 
+      setProgress("Processing images (may take a few minutes)...");
+      const pollStatus = async (reqIds) => {
+        try {
+          const params = new URLSearchParams();
+          reqIds.forEach((id) => params.append("request_ids", id));
 
-    setProgress("Processing images (may take a few minutes)...");
-    const pollStatus = async (reqIds) => {
-      try {
-        const params = new URLSearchParams();
-        reqIds.forEach((id) => params.append("request_ids", id));
+          const statusRes = await axios.get(
+            `${API_BASE}/process/status?${params.toString()}`,
+            {
+              headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+            }
+          );
 
-        const statusRes = await axios.get(
-          `${API_BASE}/process/status?${params.toString()}`,
-          {
-            headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-          }
-        );
-
-        const { status, outputs } = statusRes.data;
+          const { status, outputs } = statusRes.data;
 
           if (status === "done") {
-
             const generationEnd = performance.now();
             stepTimings.push({
-                step: "Pipeline Processing",
-                time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
+              step: "Pipeline Processing",
+              time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
             });
 
             const doneUrls = outputs
@@ -488,28 +481,27 @@ export default function ProcessPage() {
     } catch (err) {
       console.error(err);
 
-    let message = "Something went wrong. Please retry.";
+      let message = "Something went wrong. Please retry.";
 
-    if (axios.isAxiosError(err)) {
-      if (err.response) {
-        message = `Error ${err.response.status}: ${
-          err.response.data?.message || err.response.statusText
-        }`;
-      } else if (err.request) {
-        message = "Network error: No response from server.";
-      } else {
-        message = `Request error: ${err.message}`;
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          message = `Error ${err.response.status}: ${
+            err.response.data?.message || err.response.statusText
+          }`;
+        } else if (err.request) {
+          message = "Network error: No response from server.";
+        } else {
+          message = `Request error: ${err.message}`;
+        }
+      } else if (err instanceof Error) {
+        message = err.message;
       }
-    } else if (err instanceof Error) {
-      message = err.message;
+
+      setError(message);
+      setProgress("Something went wrong. Please retry.");
+      setLoading(false);
     }
-
-    setError(message);
-    setProgress("Something went wrong. Please retry.");
-    setLoading(false);
-  }
-};
-
+  };
 
   if (!authorized) {
     return (
