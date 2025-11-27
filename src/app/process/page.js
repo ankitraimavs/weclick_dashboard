@@ -5,30 +5,24 @@ import axios from "axios";
 import { useSearchParams } from "next/navigation";
 import { ENV_CONFIG } from "../../../config";
 
-
 const DARK_BG_COLOR = "#1a1a2e";
-const CARD_BG = "rgba(40, 40, 60, 0.6)"; 
+const CARD_BG = "rgba(40, 40, 60, 0.6)";
 const ACCENT_COLOR = "#66b3ff";
 const TEXT_COLOR = "#f0f0f0";
 const BORDER_COLOR = "rgba(255, 255, 255, 0.1)";
 const INPUT_BG = "rgba(255, 255, 255, 0.05)";
-
 
 const glassStyle = {
   background: CARD_BG,
   borderRadius: "16px",
   boxShadow: "0 4px 30px rgba(0, 0, 0, 0.2)",
   backdropFilter: "blur(10px)",
-  WebkitBackdropFilter: "blur(10px)", 
+  WebkitBackdropFilter: "blur(10px)",
   border: `1px solid ${BORDER_COLOR}`,
 };
 
-
-
-
 const FileUploadCard = memo(({ label, file, setFile }) => {
   const [preview, setPreview] = useState(null);
-
 
   useEffect(() => {
     if (file) {
@@ -38,7 +32,7 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
     } else {
       setPreview(null);
     }
-  }, [file]); 
+  }, [file]);
 
   return (
     <div
@@ -65,7 +59,6 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
         {label}
       </label>
 
-
       <input
         type="file"
         accept="image/*"
@@ -79,7 +72,6 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
           borderRadius: "5px",
         }}
       />
-
 
       {file && (
         <div
@@ -95,14 +87,14 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
             onClick={() => setFile(null)}
             style={{
               marginLeft: "10px",
-              background: "rgba(220, 53, 69, 0.2)", 
+              background: "rgba(220, 53, 69, 0.2)",
               border: `1px solid #dc3545`,
-              color: "#ff8080", 
+              color: "#ff8080",
               cursor: "pointer",
               fontSize: "12px",
               padding: "2px 5px",
               borderRadius: "3px",
-              transition: "all 0.2s", 
+              transition: "all 0.2s",
             }}
           >
             Remove
@@ -110,16 +102,15 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
         </div>
       )}
 
-
       <div
         style={{
           width: "200px",
           height: "200px",
           margin: "0 auto",
           borderRadius: "5px",
-          border: `1px solid ${preview ? BORDER_COLOR : "transparent"}`, 
+          border: `1px solid ${preview ? BORDER_COLOR : "transparent"}`,
           overflow: "hidden",
-          background: "#000", 
+          background: "#000",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -134,7 +125,7 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
               width: "100%",
               height: "100%",
               objectFit: "contain",
-              animation: "fadeIn 0.4s ease-out", 
+              animation: "fadeIn 0.4s ease-out",
             }}
           />
         )}
@@ -142,63 +133,65 @@ const FileUploadCard = memo(({ label, file, setFile }) => {
     </div>
   );
 });
-FileUploadCard.displayName = "FileUploadCard"; 
-
+FileUploadCard.displayName = "FileUploadCard";
 
 export default function ProcessPage() {
-  // const searchParams = useSearchParams();
-
-
-  const [prompt, setPrompt] = useState(""); 
-  const [displayPrompt, setDisplayPrompt] = useState(""); 
+  const [prompt, setPrompt] = useState("");
+  const [displayPrompt, setDisplayPrompt] = useState("");
 
   const [height1, setHeight1] = useState(150);
   const [height2, setHeight2] = useState(150);
+  const [height3, setHeight3] = useState(150);
+  const [height4, setHeight4] = useState(150);
+  const [height5, setHeight5] = useState(150);
+  const [height6, setHeight6] = useState(150);
+
   const [file1, setFile1] = useState(null);
   const [file2, setFile2] = useState(null);
-  const [error, setError] = useState("");
+  const [file3, setFile3] = useState(null);
+  const [file4, setFile4] = useState(null);
+  const [file5, setFile5] = useState(null);
+  const [file6, setFile6] = useState(null);
 
+  const [error, setError] = useState("");
   const [outputImages, setOutputImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
   const [timings, setTimings] = useState([]);
-  // const group_prompt = searchParams.get("prompt") || "";
-  // const incomingInput1 = searchParams.get("input1") || "";
-  // const incomingInput2 = searchParams.get("input2") || "";
 
   const [userEmail, setUserEmail] = useState(null);
   const [authorized, setAuthorized] = useState(false);
   const [preloading, setPreloading] = useState(true);
 
-    const [env, setEnv] = useState("dev"); // default dev
+  const [env, setEnv] = useState("dev");
   const { API_BASE, AUTH_TOKEN, USER_ID } = ENV_CONFIG[env];
-
-// const USER_ID = process.env.NEXT_PUBLIC_USER_ID;
-// const AUTH_TOKEN = process.env.NEXT_PUBLIC_AUTH_TOKEN;
-// const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
   const normalizeHeight = (value, min, max) => {
     const raw = 0.4 + ((value - min) / (max - min)) * (1.0 - 0.4);
     return Math.round(raw * 10) / 10;
   };
 
-
-   const toggleEnv = () => setEnv(env === "dev" ? "prod" : "dev");
-
   const handleClear = useCallback(() => {
     setPrompt("");
     setDisplayPrompt("");
     setHeight1(150);
     setHeight2(150);
+    setHeight3(150);
+    setHeight4(150);
+    setHeight5(150);
+    setHeight6(150);
     setFile1(null);
     setFile2(null);
+    setFile3(null);
+    setFile4(null);
+    setFile5(null);
+    setFile6(null);
     setOutputImages([]);
     setLoading(false);
     setProgress("");
     setTimings([]);
     setError("");
   }, []);
-
 
   useEffect(() => {
     const email = localStorage.getItem("email");
@@ -208,44 +201,42 @@ export default function ProcessPage() {
     }
   }, []);
 
-useEffect(() => {
-  const searchParams = new URLSearchParams(window.location.search); // client-side only
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
 
-  const rawPrompt = searchParams.get("prompt") || "";
-  const decodedPrompt = decodeURIComponent(rawPrompt);
-  setPrompt(decodedPrompt);
-  setDisplayPrompt(decodedPrompt);
+    const rawPrompt = searchParams.get("prompt") || "";
+    const decodedPrompt = decodeURIComponent(rawPrompt);
+    setPrompt(decodedPrompt);
+    setDisplayPrompt(decodedPrompt);
 
-  const incomingInput1 = searchParams.get("input1") || "";
-  const incomingInput2 = searchParams.get("input2") || "";
+    const incomingInput1 = searchParams.get("input1") || "";
+    const incomingInput2 = searchParams.get("input2") || "";
 
-  const fetchImage = async (url) => {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return new File([blob], "input_from_group.jpg", { type: blob.type });
-  };
+    const fetchImage = async (url) => {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return new File([blob], "input_from_group.jpg", { type: blob.type });
+    };
 
-  const preloadImages = async () => {
-    try {
-      if (incomingInput1) {
-        const file1Obj = await fetchImage(incomingInput1);
-        setFile1(file1Obj);
+    const preloadImages = async () => {
+      try {
+        if (incomingInput1) {
+          const file1Obj = await fetchImage(incomingInput1);
+          setFile1(file1Obj);
+        }
+        if (incomingInput2) {
+          const file2Obj = await fetchImage(incomingInput2);
+          setFile2(file2Obj);
+        }
+      } catch (err) {
+        console.error("Error loading input images:", err);
+      } finally {
+        setPreloading(false);
       }
-      if (incomingInput2) {
-        const file2Obj = await fetchImage(incomingInput2);
-        setFile2(file2Obj);
-      }
-    } catch (err) {
-      console.error("Error loading input images:", err);
-    } finally {
-      setPreloading(false);
-    }
-  };
+    };
 
-  preloadImages();
-}, []);
-
-
+    preloadImages();
+  }, []);
 
   if (preloading) {
     return (
@@ -301,27 +292,24 @@ useEffect(() => {
     );
   }
 
-
   const handleProcess = async () => {
-    if (!file1 || !file2)
-      return alert("Please upload both Image 1 and Image 2.");
+    const uploadedFiles = [file1, file2, file3, file4, file5, file6].filter(Boolean);
+    
+    if (uploadedFiles.length < 2) {
+      return alert("Please upload at least 2 images.");
+    }
+
     setError("");
-
-    const filesToUpload = [file1, file2];
-
     setLoading(true);
     setOutputImages([]);
     setTimings([]);
     let stepTimings = [];
-    
-
     let processingStartTime = 0;
 
     try {
       const headers = {
         Authorization: `Bearer ${AUTH_TOKEN}`,
       };
-
 
       let start = performance.now();
       setProgress("Creating group...");
@@ -337,11 +325,10 @@ useEffect(() => {
         time: ((end - start) / 1000).toFixed(2) + "s",
       });
 
-
       start = performance.now();
       setProgress("Generating upload URLs...");
       const uploads = await Promise.all(
-        filesToUpload.map(async (file) => {
+        uploadedFiles.map(async (file) => {
           const formData = new FormData();
           formData.append("user_id", USER_ID.toString());
           formData.append("filename", file.name);
@@ -361,7 +348,6 @@ useEffect(() => {
       });
       const blobPaths = uploads.map((u) => u.blob_path);
 
-
       start = performance.now();
       setProgress("Uploading images...");
       await Promise.all(
@@ -370,9 +356,9 @@ useEffect(() => {
             method: "PUT",
             headers: {
               "x-ms-blob-type": "BlockBlob",
-              "Content-Type": filesToUpload[i].type,
+              "Content-Type": uploadedFiles[i].type,
             },
-            body: filesToUpload[i],
+            body: uploadedFiles[i],
           })
         )
       );
@@ -381,7 +367,6 @@ useEffect(() => {
         step: "Upload images",
         time: ((end - start) / 1000).toFixed(2) + "s",
       });
-
 
       start = performance.now();
       setProgress("Finalizing uploads...");
@@ -401,18 +386,18 @@ useEffect(() => {
         time: ((end - start) / 1000).toFixed(2) + "s",
       });
 
-
       start = performance.now();
       setProgress("Starting processing...");
-      const normalizedHeights = [
-        normalizeHeight(height1, 140, 160),
-        normalizeHeight(height2, 140, 160),
-      ];
+      
+      const heights = [height1, height2, height3, height4, height5, height6];
+      const normalizedHeights = heights
+        .slice(0, uploadedFiles.length)
+        .map(h => normalizeHeight(h, 140, 160));
 
       const processRes = await axios.post(
         `${API_BASE}/v2/process/groups/${groupId}`,
         {
-          prompt, 
+          prompt: displayPrompt,
           mode: "full_body",
           generations: 4,
           height_index_list: normalizedHeights,
@@ -428,10 +413,8 @@ useEffect(() => {
         step: "Start processing",
         time: ((end - start) / 1000).toFixed(2) + "s",
       });
-      
 
-      processingStartTime = performance.now(); 
-
+      processingStartTime = performance.now();
 
       setProgress("Processing images (may take a few minutes)...");
       const pollStatus = async (reqIds) => {
@@ -449,20 +432,19 @@ useEffect(() => {
           const { status, outputs } = statusRes.data;
 
           if (status === "done") {
-
             const generationEnd = performance.now();
             stepTimings.push({
-                step: "Pipeline Processing",
-                time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
+              step: "Pipeline Processing",
+              time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
             });
-            
+
             const doneUrls = outputs
               .filter((o) => o.status === "done" && o.url)
               .map((o) => o.url);
             setOutputImages(doneUrls);
             setProgress("Processing complete.");
             setLoading(false);
-            setTimings(stepTimings); 
+            setTimings(stepTimings);
           } else if (status === "error") {
             setProgress("Error during processing. Try again.");
             setLoading(false);
@@ -501,7 +483,6 @@ useEffect(() => {
     }
   };
 
-  // --- Unauthorized Screen (Styled) ---
   if (!authorized) {
     return (
       <div
@@ -527,7 +508,8 @@ useEffect(() => {
     );
   }
 
-  // --- Main Component Render (Styled) ---
+  const uploadedFileCount = [file1, file2, file3, file4, file5, file6].filter(Boolean).length;
+
   return (
     <div
       style={{
@@ -540,7 +522,6 @@ useEffect(() => {
         fontFamily: "sans-serif",
       }}
     >
-      {/* --- Global animation styles --- */}
       <style>
         {`
           @keyframes fadeIn {
@@ -554,16 +535,54 @@ useEffect(() => {
         style={{
           ...glassStyle,
           width: "100%",
-          maxWidth: "1000px",
+          maxWidth: "1400px",
           padding: "30px",
           color: TEXT_COLOR,
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "2fr 1fr",
           gap: "30px",
         }}
       >
-        {/* --- Left Column: Inputs --- */}
+        {/* Left Column: Inputs */}
         <div>
+          {/* Server Selection */}
+          <div style={{ marginBottom: "20px" }}>
+            <h2
+              style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                marginBottom: "10px",
+                color: ACCENT_COLOR,
+              }}
+            >
+              Server Selection
+            </h2>
+            <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+              {["dev", "staging", "prod"].map((serverEnv) => (
+                <label
+                  key={serverEnv}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="server"
+                    value={serverEnv}
+                    checked={env === serverEnv}
+                    onChange={(e) => setEnv(e.target.value)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  <span style={{ textTransform: "capitalize" }}>{serverEnv}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {error && (
             <div
               style={{
@@ -582,7 +601,7 @@ useEffect(() => {
             </div>
           )}
 
-          {/* 1. Upload Images */}
+          {/* Upload Images */}
           <div style={{ marginBottom: "20px" }}>
             <h2
               style={{
@@ -592,15 +611,19 @@ useEffect(() => {
                 color: ACCENT_COLOR,
               }}
             >
-              1. Upload Images
+              1. Upload Images ({uploadedFileCount}/6)
             </h2>
-            <div style={{ display: "flex", gap: "15px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "15px" }}>
               <FileUploadCard label="Image 1" file={file1} setFile={setFile1} />
               <FileUploadCard label="Image 2" file={file2} setFile={setFile2} />
+              <FileUploadCard label="Image 3" file={file3} setFile={setFile3} />
+              <FileUploadCard label="Image 4" file={file4} setFile={setFile4} />
+              <FileUploadCard label="Image 5" file={file5} setFile={setFile5} />
+              <FileUploadCard label="Image 6" file={file6} setFile={setFile6} />
             </div>
           </div>
 
-          {/* 2. Prompt Section */}
+          {/* Prompt Section */}
           <div style={{ marginBottom: "20px" }}>
             <h2
               style={{
@@ -631,7 +654,7 @@ useEffect(() => {
             />
           </div>
 
-          {/* 3. Height Adjustment Section */}
+          {/* Height Adjustment Section */}
           <div style={{ marginBottom: "25px" }}>
             <h2
               style={{
@@ -645,69 +668,49 @@ useEffect(() => {
             </h2>
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-around",
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
                 gap: "15px",
               }}
             >
-              <div style={{ flex: 1 }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "5px",
-                    fontSize: "14px",
-                    color: TEXT_COLOR,
-                  }}
-                >
-                  Image 1:
-                </label>
-                <input
-                  type="number"
-                  value={height1}
-                  onChange={(e) => setHeight1(Number(e.target.value))}
-                  min="140"
-                  max="160"
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: "5px",
-                    border: `1px solid ${BORDER_COLOR}`,
-                    outline: "none",
-                    background: INPUT_BG,
-                    color: TEXT_COLOR,
-                    transition: "background 0.2s, border-color 0.2s",
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "5px",
-                    fontSize: "14px",
-                    color: TEXT_COLOR,
-                  }}
-                >
-                  Image 2:
-                </label>
-                <input
-                  type="number"
-                  value={height2}
-                  onChange={(e) => setHeight2(Number(e.target.value))}
-                  min="140"
-                  max="160"
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: "5px",
-                    border: `1px solid ${BORDER_COLOR}`,
-                    outline: "none",
-                    background: INPUT_BG,
-                    color: TEXT_COLOR,
-                    transition: "background 0.2s, border-color 0.2s",
-                  }}
-                />
-              </div>
+              {[
+                { label: "Image 1", value: height1, setter: setHeight1 },
+                { label: "Image 2", value: height2, setter: setHeight2 },
+                { label: "Image 3", value: height3, setter: setHeight3 },
+                { label: "Image 4", value: height4, setter: setHeight4 },
+                { label: "Image 5", value: height5, setter: setHeight5 },
+                { label: "Image 6", value: height6, setter: setHeight6 },
+              ].map((item, idx) => (
+                <div key={idx}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "5px",
+                      fontSize: "14px",
+                      color: TEXT_COLOR,
+                    }}
+                  >
+                    {item.label}:
+                  </label>
+                  <input
+                    type="number"
+                    value={item.value}
+                    onChange={(e) => item.setter(Number(e.target.value))}
+                    min="140"
+                    max="160"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "5px",
+                      border: `1px solid ${BORDER_COLOR}`,
+                      outline: "none",
+                      background: INPUT_BG,
+                      color: TEXT_COLOR,
+                      transition: "background 0.2s, border-color 0.2s",
+                    }}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
@@ -715,25 +718,25 @@ useEffect(() => {
           <div style={{ display: "flex", gap: "10px" }}>
             <button
               onClick={handleProcess}
-              disabled={loading || !file1 || !file2}
+              disabled={loading || uploadedFileCount < 2}
               style={{
                 flex: 3,
                 padding: "12px",
                 borderRadius: "8px",
                 border: "none",
                 background:
-                  loading || !file1 || !file2
+                  loading || uploadedFileCount < 2
                     ? "rgba(100, 100, 100, 0.6)"
                     : ACCENT_COLOR,
                 color:
-                  loading || !file1 || !file2 ? "#aaa" : DARK_BG_COLOR,
+                  loading || uploadedFileCount < 2 ? "#aaa" : DARK_BG_COLOR,
                 fontWeight: "700",
                 fontSize: "16px",
                 cursor:
-                  loading || !file1 || !file2 ? "not-allowed" : "pointer",
+                  loading || uploadedFileCount < 2 ? "not-allowed" : "pointer",
                 transition: "0.2s",
                 boxShadow:
-                  loading || !file1 || !file2
+                  loading || uploadedFileCount < 2
                     ? "none"
                     : `0 0 15px ${ACCENT_COLOR}60`,
               }}
@@ -760,7 +763,7 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* --- Right Column: Output and Status --- */}
+        {/* Right Column: Output and Status */}
         <div>
           <h2
             style={{
@@ -772,12 +775,16 @@ useEffect(() => {
               color: ACCENT_COLOR,
             }}
           >
-            Status & Output (USES DEV SERVER)
+            Status & Output
+            <div style={{ 
+              fontSize: "14px", 
+              color: "#94a3b8", 
+              marginTop: "5px",
+              textTransform: "uppercase"
+            }}>
+              Using {env} Server
+            </div>
           </h2>
-
-           <button onClick={toggleEnv}>
-        Switch to {env === "dev" ? "Prod" : "Dev"}
-      </button>
 
           {/* Progress and Timings */}
           <div style={{ minHeight: "100px", marginBottom: "20px" }}>
@@ -885,10 +892,8 @@ useEffect(() => {
                         borderRadius: "8px",
                         border: `2px solid ${ACCENT_COLOR}`,
                         transition: "transform 0.2s",
-
-                        // Apply animation without the delay
                         animation: `fadeIn 0.5s ease-out`,
-                        animationFillMode: "both", // Start at opacity 0
+                        animationFillMode: "both",
                       }}
                       onMouseOver={(e) =>
                         (e.currentTarget.style.transform = "scale(1.02)")
