@@ -329,6 +329,65 @@ export default function GroupCard({ group, onDelete }) {
     </div>
   );
 
+ const renderSingleImage = (title, imageUrl) => (
+  <div style={{ marginBottom: '20px' }}>
+    <p
+      style={{
+        fontSize: '14px',
+        fontWeight: 600,
+        color: '#e2e8f0',
+        marginBottom: '8px',
+      }}
+    >
+      {title}
+    </p>
+
+    {imageUrl ? (
+      <div
+        style={{
+          height: '120px',
+          width: '120px',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          cursor: 'pointer',
+          transition: 'transform 0.2s',
+        }}
+        onClick={() => setModalImage(imageUrl)}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+      >
+        <img
+          src={imageUrl}
+          alt={title}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => {
+            e.currentTarget.src = '';
+            e.currentTarget.parentElement.innerHTML =
+              `<div style="height:120px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);color:#f87171;font-size:13px;border-radius:10px;">Not Available</div>`;
+          }}
+        />
+      </div>
+    ) : (
+      <div
+        style={{
+          height: '120px',
+          width: '120px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '13px',
+          color: '#f87171',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '10px',
+        }}
+      >
+        Not Available
+      </div>
+    )}
+  </div>
+);
+
+
   const groupPrompt = group.output_images.find((img) => img.prompt)?.prompt || null;
   const enhancedGroupPrompt =
     group.output_images.find((img) => img.enhanced_prompt)?.enhanced_prompt || null;
@@ -363,6 +422,8 @@ export default function GroupCard({ group, onDelete }) {
 
                     const input1 = group.input_images?.[0]?.url || '';
                     const input2 = group.input_images?.[1]?.url || '';
+                    const input3 = group.input_images?.[2]?.url || '';
+                    const input4 = group.input_images?.[3]?.url || '';
 
                     const prompt =
                       group.output_images?.[0]?.prompt ||
@@ -374,6 +435,8 @@ export default function GroupCard({ group, onDelete }) {
                       prompt: prompt,
                       input1: input1,
                       input2: input2,
+                      input3: input3,
+                      input4: input4,
                     });
 
                     router.push(`/process?${params.toString()}`);
@@ -465,7 +528,12 @@ export default function GroupCard({ group, onDelete }) {
           </span>
           {renderImages('Input Images', group.input_images)}
           {group.output_images.length > 0 && <div style={dividerStyle}></div>}
+          {renderSingleImage('Masked Image', group.mask_url)}
+          {group.output_images.length > 0 && <div style={dividerStyle}></div>}
           {renderImages('Generated Images', group.output_images)}
+
+
+     
           <>
             {group.input_images.length > 0 && <div style={dividerStyle}></div>}
             {renderImages('Kontext Lora Generation', [
@@ -478,96 +546,268 @@ export default function GroupCard({ group, onDelete }) {
         </div>
       </div>
 
-      {modalImage && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.85)',
-            backdropFilter: 'blur(12px)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 9999,
-            animation: 'fadeIn 0.3s ease',
-          }}
-          onClick={() => setModalImage(null)}
-        >
-          <div
-            style={{
-              position: 'relative',
-              width: '90%',
-              height: '90%',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              borderRadius: '16px',
-              overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={modalImage}
-              alt="Full view"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                borderRadius: '12px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-              }}
-            />
-            <button
-              onClick={() => setModalImage(null)}
-              style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                background: 'rgba(255,255,255,0.15)',
-                border: 'none',
-                borderRadius: '50%',
-                padding: '10px',
-                cursor: 'pointer',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              <X size={20} color="#fff" />
-            </button>
-            <button
-              onClick={() => {
-                const link = document.createElement('a');
-                link.href = modalImage;
-                link.download = `image_${Date.now()}.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-              style={{
-                position: 'absolute',
-                bottom: '20px',
-                right: '20px',
-                background: 'rgba(37,99,235,0.8)',
-                color: '#fff',
-                padding: '10px 16px',
-                borderRadius: '10px',
-                fontSize: '14px',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                backdropFilter: 'blur(6px)',
-                cursor: 'pointer',
-              }}
-            >
-              <Download size={16} />
-              Download
-            </button>
-          </div>
+
+{modalImage && (
+  <div
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(12px)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 9999,
+      animation: 'fadeIn 0.3s ease',
+    }}
+    onClick={() => setModalImage(null)}
+  >
+    <div
+      style={{
+        position: 'relative',
+        width: '90%',
+        height: '80%',
+        display: 'flex',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        background: 'rgba(0,0,0,0.9)',
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+
+      <div
+        style={{
+          width: '320px',
+          display: 'flex',
+          gap: '10px',
+          padding: '10px',
+          background: 'rgba(15,23,42,0.8)',
+          overflowY: 'auto',
+          maxHeight: '100%',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+          {/* Inputs */}
+          {group.input_images.length > 0 && (
+            <>
+              <p style={{ color: '#e2e8f0', fontWeight: 600, textAlign: 'center', fontSize: '16px', marginBottom: '6px' }}>
+                Inputs
+              </p>
+              {group.input_images.map((img, idx) => (
+                <div
+                  key={`input-${idx}`}
+                  style={{
+                    width: '100%',
+                    height: '80px',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    border: img.url === modalImage ? '2px solid #2563eb' : '1px solid rgba(255,255,255,0.2)',
+                  }}
+                  onClick={() => setModalImage(img.url)}
+                >
+                  <img src={img.url} alt={`Input ${idx + 1}`} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Masked */}
+          {group.mask_url && (
+            <>
+              <p style={{ color: '#e2e8f0', fontWeight: 600, textAlign: 'center', fontSize: '16px', marginTop: '12px', marginBottom: '6px' }}>
+                Masked
+              </p>
+              <div
+                style={{
+                  width: '100%',
+                  height: '80px',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  border: group.mask_url === modalImage ? '2px solid #2563eb' : '1px solid rgba(255,255,255,0.2)',
+                  marginBottom: '6px',
+                }}
+                onClick={() => setModalImage(group.mask_url)}
+              >
+                <img
+                  src={group.mask_url}
+                  alt="Masked Image"
+                  style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                  onError={(e) => {
+                    e.currentTarget.src = '';
+                    e.currentTarget.parentElement.innerHTML =
+                      `<div style="height:100%;display:flex;align-items:center;justify-content:center;background:rgba(127,29,29,0.2);color:#f87171;font-size:12px;">⚠️ Unavailable</div>`;
+                  }}
+                />
+              </div>
+            </>
+          )}
         </div>
-      )}
+
+
+        <div
+  style={{
+    width: '1px',
+    background: 'rgba(255,255,255,0.15)',
+    margin: '0 6px',
+  }}
+/>
+
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+
+          {group.output_images.length > 0 && (
+            <>
+              <p style={{ color: '#e2e8f0', fontWeight: 600, textAlign: 'center', fontSize: '16px', marginBottom: '6px' }}>Outputs</p>
+              {group.output_images.map((img, idx) => (
+                <div
+                  key={`output-${idx}`}
+                  style={{
+                    width: '100%',
+                    height: '100px',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    border: img.url === modalImage ? '2px solid #2563eb' : '1px solid rgba(255,255,255,0.2)',
+                  }}
+                  onClick={() => setModalImage(img.url)}
+                >
+                  <img src={img.url} alt={`Output ${idx + 1}`} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                </div>
+              ))}
+            </>
+          )}
+
+          {(group.kl_processed_path || reprocessImage) && (
+            <>
+              <p style={{ color: '#e2e8f0', fontWeight: 600, textAlign: 'center', fontSize: '16px', marginTop: '12px', marginBottom: '6px' }}>Kontext</p>
+              {[...(group.kl_processed_path ? [{ url: group.kl_processed_path, status: 'done' }] : []),
+                 ...(reprocessImage ? [reprocessImage] : [])].map((img, idx) => (
+                <div
+                  key={`kontext-${idx}`}
+                  style={{
+                    width: '100%',
+                    height: '80px',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    border: img.url === modalImage ? '2px solid #2563eb' : '1px solid rgba(255,255,255,0.2)',
+                    marginBottom: '6px',
+                  }}
+                  onClick={() => setModalImage(img.url)}
+                >
+                  {img.url ? (
+                    <img src={img.url} alt={`Kontext ${idx + 1}`} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                  ) : (
+                    <div
+                      style={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        rightMargin: '66px',
+                        color: img.status === 'error' ? '#f87171' : '#94a3b8',
+                        background: img.status === 'error' ? 'rgba(127,29,29,0.2)' : 'rgba(255,255,255,0.05)',
+                      }}
+                    >
+                      {img.status === 'error' ? '⚠️ Failed' : '⏳ Processing'}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative',
+        }}
+      >
+        <img
+          src={modalImage}
+          alt="Main view"
+          style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+        />
+
+        {/* Close Button */}
+        <button
+          onClick={() => setModalImage(null)}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            background: 'rgba(255,255,255,0.15)',
+            border: 'none',
+            borderRadius: '50%',
+            padding: '10px',
+            cursor: 'pointer',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <X size={20} color="#fff" />
+        </button>
+
+        <button
+          onClick={() => {
+            if (!modalImage) return;
+            const link = document.createElement('a');
+            link.href = modalImage;
+            link.download = `image_${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+          style={{
+            position: 'absolute',
+            bottom: '20px',
+            right: '20px',
+            background: 'rgba(37,99,235,0.8)',
+            color: '#fff',
+            padding: '10px 16px',
+            borderRadius: '10px',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            backdropFilter: 'blur(6px)',
+            cursor: 'pointer',
+          }}
+        >
+          <Download size={16} />
+          Download
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+
+
     </>
   );
 }

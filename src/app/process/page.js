@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, memo } from "react";
 import axios from "axios";
-import { useSearchParams } from "next/navigation";
 import { ENV_CONFIG } from "../../../config";
 
 const DARK_BG_COLOR = "#1a1a2e";
@@ -163,7 +162,7 @@ export default function ProcessPage() {
   const [authorized, setAuthorized] = useState(false);
   const [preloading, setPreloading] = useState(true);
 
-  const [env, setEnv] = useState("dev");
+  const [env, setEnv] = useState("dev"); // default dev
   const { API_BASE, AUTH_TOKEN, USER_ID } = ENV_CONFIG[env];
 
   const normalizeHeight = (value, min, max) => {
@@ -208,14 +207,22 @@ export default function ProcessPage() {
     const decodedPrompt = decodeURIComponent(rawPrompt);
     setPrompt(decodedPrompt);
     setDisplayPrompt(decodedPrompt);
+    const rawPrompt = searchParams.get("prompt") || "";
+    const decodedPrompt = decodeURIComponent(rawPrompt);
+    setPrompt(decodedPrompt);
+    setDisplayPrompt(decodedPrompt);
 
     const incomingInput1 = searchParams.get("input1") || "";
     const incomingInput2 = searchParams.get("input2") || "";
+    const incomingInput3 = searchParams.get("input3") || "";
+    const incomingInput4 = searchParams.get("input4") || "";
 
     const fetchImage = async (url) => {
       const res = await fetch(url);
       const blob = await res.blob();
-      return new File([blob], "input_from_group.jpg", { type: blob.type });
+      // create a name based on url so uploads have distinct names
+      const name = url.split("/").pop().split("?")[0] || "input_from_group.jpg";
+      return new File([blob], name, { type: blob.type });
     };
 
     const preloadImages = async () => {
@@ -227,6 +234,14 @@ export default function ProcessPage() {
         if (incomingInput2) {
           const file2Obj = await fetchImage(incomingInput2);
           setFile2(file2Obj);
+        }
+        if (incomingInput3) {
+          const file3Obj = await fetchImage(incomingInput3);
+          setFile3(file3Obj);
+        }
+        if (incomingInput4) {
+          const file4Obj = await fetchImage(incomingInput4);
+          setFile4(file4Obj);
         }
       } catch (err) {
         console.error("Error loading input images:", err);
@@ -281,7 +296,7 @@ export default function ProcessPage() {
               50% { transform: translateX(0); }
               100% { transform: translateX(100%); }
             }
-            
+
             @keyframes fadeIn {
               from { opacity: 0; transform: scale(0.95); }
               to { opacity: 1; transform: scale(1); }
@@ -294,110 +309,119 @@ export default function ProcessPage() {
 
   const handleProcess = async () => {
     const uploadedFiles = [file1, file2, file3, file4, file5, file6].filter(Boolean);
-    
+
     if (uploadedFiles.length < 2) {
       return alert("Please upload at least 2 images.");
     }
 
-    setError("");
     setLoading(true);
     setOutputImages([]);
     setTimings([]);
     let stepTimings = [];
+
+
     let processingStartTime = 0;
 
-    try {
-      const headers = {
-        Authorization: `Bearer ${AUTH_TOKEN}`,
-      };
+  try {
+    const headers = {
+      Authorization: `Bearer ${AUTH_TOKEN}`,
+    };
 
-      let start = performance.now();
-      setProgress("Creating group...");
-      const groupRes = await axios.post(
-        `${API_BASE}/v2/group/create`,
-        null,
-        { params: { user_id: USER_ID }, headers }
-      );
-      const groupId = groupRes.data.groupId;
-      let end = performance.now();
-      stepTimings.push({
-        step: "Create group",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
+    // Step 1: Create group
+    let start = performance.now();
+    setProgress("Creating group...");
+    const groupRes = await axios.post(
+      `${API_BASE}/v2/group/create`,
+      null,
+      { params: { user_id: USER_ID }, headers }
+    );
+    const groupId = groupRes.data.groupId;
+    let end = performance.now();
+    stepTimings.push({
+      step: "Create group",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
 
-      start = performance.now();
-      setProgress("Generating upload URLs...");
-      const uploads = await Promise.all(
-        uploadedFiles.map(async (file) => {
-          const formData = new FormData();
-          formData.append("user_id", USER_ID.toString());
-          formData.append("filename", file.name);
+    // Step 2: Generate upload URLs
+    start = performance.now();
+    setProgress("Generating upload URLs...");
+    const uploads = await Promise.all(
+      filesToUpload.map(async (file) => {
+        const formData = new FormData();
+        formData.append("user_id", USER_ID.toString());
+        formData.append("filename", file.name);
 
-          const res = await axios.post(
-            `${API_BASE}/v2/uploads/generate-upload-url`,
-            formData,
-            { headers }
-          );
-          return res.data;
+        const res = await axios.post(
+          `${API_BASE}/v2/uploads/generate-upload-url`,
+          formData,
+          { headers }
+        );
+        return res.data;
+      })
+    );
+    end = performance.now();
+    stepTimings.push({
+      step: "Generate upload URLs",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
+    const blobPaths = uploads.map((u) => u.blob_path);
+
+    // Step 3: Upload images
+    start = performance.now();
+    setProgress("Uploading images...");
+    await Promise.all(
+      uploads.map((u, i) =>
+        fetch(u.upload_url, {
+          method: "PUT",
+          headers: {
+            "x-ms-blob-type": "BlockBlob",
+            "Content-Type": filesToUpload[i].type,
+          },
+          body: filesToUpload[i],
         })
-      );
-      end = performance.now();
-      stepTimings.push({
-        step: "Generate upload URLs",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
-      const blobPaths = uploads.map((u) => u.blob_path);
+      )
+    );
+    end = performance.now();
+    stepTimings.push({
+      step: "Upload images",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
 
-      start = performance.now();
-      setProgress("Uploading images...");
-      await Promise.all(
-        uploads.map((u, i) =>
-          fetch(u.upload_url, {
-            method: "PUT",
-            headers: {
-              "x-ms-blob-type": "BlockBlob",
-              "Content-Type": uploadedFiles[i].type,
-            },
-            body: uploadedFiles[i],
-          })
-        )
-      );
-      end = performance.now();
-      stepTimings.push({
-        step: "Upload images",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
+    // Step 4: Finalize uploads
+    start = performance.now();
+    setProgress("Finalizing uploads...");
+    const finalizeForm = new FormData();
+    blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
+    finalizeForm.append("user_id", USER_ID.toString());
+    finalizeForm.append("group_id", groupId.toString());
 
-      start = performance.now();
-      setProgress("Finalizing uploads...");
-      const finalizeForm = new FormData();
-      blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
-      finalizeForm.append("user_id", USER_ID.toString());
-      finalizeForm.append("group_id", groupId.toString());
+    await axios.post(
+      `${API_BASE}/v2/uploads/uploads-complete`,
+      finalizeForm,
+      { headers }
+    );
+    end = performance.now();
+    stepTimings.push({
+      step: "Finalize uploads",
+      time: ((end - start) / 1000).toFixed(2) + "s",
+    });
 
-      await axios.post(
-        `${API_BASE}/v2/uploads/uploads-complete`,
-        finalizeForm,
-        { headers }
-      );
-      end = performance.now();
-      stepTimings.push({
-        step: "Finalize uploads",
-        time: ((end - start) / 1000).toFixed(2) + "s",
-      });
+    // Step 5: Start processing
+    start = performance.now();
+    setProgress("Starting processing...");
+    const normalizedHeights = [
+      normalizeHeight(height1, 140, 160),
+      normalizeHeight(height2, 140, 160),
+      normalizeHeight(height3, 140, 160),
+      normalizeHeight(height4, 140, 160),
+    ].slice(0, filesToUpload.length); // only for uploaded files
 
-      start = performance.now();
-      setProgress("Starting processing...");
-      
-      const heights = [height1, height2, height3, height4, height5, height6];
-      const normalizedHeights = heights
-        .slice(0, uploadedFiles.length)
-        .map(h => normalizeHeight(h, 140, 160));
+    const promptToSend = displayPrompt.trim() || prompt;
 
       const processRes = await axios.post(
         `${API_BASE}/v2/process/groups/${groupId}`,
         {
-          prompt: displayPrompt,
+          prompt,
           mode: "full_body",
           generations: 4,
           height_index_list: normalizedHeights,
@@ -414,28 +438,31 @@ export default function ProcessPage() {
         time: ((end - start) / 1000).toFixed(2) + "s",
       });
 
+
       processingStartTime = performance.now();
 
-      setProgress("Processing images (may take a few minutes)...");
-      const pollStatus = async (reqIds) => {
-        try {
-          const params = new URLSearchParams();
-          reqIds.forEach((id) => params.append("request_ids", id));
 
-          const statusRes = await axios.get(
-            `${API_BASE}/process/status?${params.toString()}`,
-            {
-              headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-            }
-          );
+    setProgress("Processing images (may take a few minutes)...");
+    const pollStatus = async (reqIds) => {
+      try {
+        const params = new URLSearchParams();
+        reqIds.forEach((id) => params.append("request_ids", id));
 
-          const { status, outputs } = statusRes.data;
+        const statusRes = await axios.get(
+          `${API_BASE}/process/status?${params.toString()}`,
+          {
+            headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+          }
+        );
+
+        const { status, outputs } = statusRes.data;
 
           if (status === "done") {
+
             const generationEnd = performance.now();
             stepTimings.push({
-              step: "Pipeline Processing",
-              time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
+                step: "Pipeline Processing",
+                time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
             });
 
             const doneUrls = outputs
@@ -461,27 +488,28 @@ export default function ProcessPage() {
     } catch (err) {
       console.error(err);
 
-      let message = "Something went wrong. Please retry.";
+    let message = "Something went wrong. Please retry.";
 
-      if (axios.isAxiosError(err)) {
-        if (err.response) {
-          message = `Error ${err.response.status}: ${
-            err.response.data?.message || err.response.statusText
-          }`;
-        } else if (err.request) {
-          message = "Network error: No response from server.";
-        } else {
-          message = `Request error: ${err.message}`;
-        }
-      } else if (err instanceof Error) {
-        message = err.message;
+    if (axios.isAxiosError(err)) {
+      if (err.response) {
+        message = `Error ${err.response.status}: ${
+          err.response.data?.message || err.response.statusText
+        }`;
+      } else if (err.request) {
+        message = "Network error: No response from server.";
+      } else {
+        message = `Request error: ${err.message}`;
       }
-
-      setError(message);
-      setProgress("Something went wrong. Please retry.");
-      setLoading(false);
+    } else if (err instanceof Error) {
+      message = err.message;
     }
-  };
+
+    setError(message);
+    setProgress("Something went wrong. Please retry.");
+    setLoading(false);
+  }
+};
+
 
   if (!authorized) {
     return (
@@ -776,9 +804,9 @@ export default function ProcessPage() {
             }}
           >
             Status & Output
-            <div style={{ 
-              fontSize: "14px", 
-              color: "#94a3b8", 
+            <div style={{
+              fontSize: "14px",
+              color: "#94a3b8",
               marginTop: "5px",
               textTransform: "uppercase"
             }}>
@@ -837,8 +865,7 @@ export default function ProcessPage() {
                 >
                   {timings.map((t, idx) => (
                     <li key={idx} style={{ marginBottom: "3px" }}>
-                      {t.step}:{" "}
-                      <span style={{ color: ACCENT_COLOR }}>{t.time}</span>
+                      {t.step}: <span style={{ color: ACCENT_COLOR }}>{t.time}</span>
                     </li>
                   ))}
                 </ul>
@@ -895,12 +922,8 @@ export default function ProcessPage() {
                         animation: `fadeIn 0.5s ease-out`,
                         animationFillMode: "both",
                       }}
-                      onMouseOver={(e) =>
-                        (e.currentTarget.style.transform = "scale(1.02)")
-                      }
-                      onMouseOut={(e) =>
-                        (e.currentTarget.style.transform = "scale(1)")
-                      }
+                      onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+                      onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
                     />
                   </a>
                 ))}
