@@ -11,6 +11,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -30,6 +31,7 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [groups, setGroups] = useState([]);
   const [paidUsers, setPaidUsers] = useState([]); // ✅ added
@@ -305,7 +307,7 @@ export default function DashboardPage() {
 
                 {/* Open Playground Button */}
                 <button
-                  onClick={() => (window.location.href = '/process')}
+                  onClick={() => router.push('/process')}
                   style={{
                     background: 'rgba(37,99,235,0.15)',
                     color: '#60a5fa',
@@ -316,6 +318,20 @@ export default function DashboardPage() {
                   }}
                 >
                   Open Playground
+                </button>
+
+                  <button
+                  onClick={() => router.push('/feedback')}
+                  style={{
+                    background: 'rgba(37,99,235,0.15)',
+                    color: '#60a5fa',
+                    border: '1px solid rgba(37,99,235,0.4)',
+                    borderRadius: 10,
+                    padding: '10px 16px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Feedback
                 </button>
               </div>
 
