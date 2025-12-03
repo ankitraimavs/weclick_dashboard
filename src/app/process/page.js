@@ -142,14 +142,17 @@ export default function ProcessPage() {
   const [height2, setHeight2] = useState(150);
   const [height3, setHeight3] = useState(150);
   const [height4, setHeight4] = useState(150);
+  const [height5, setHeight5] = useState(150);
+  const [height6, setHeight6] = useState(150);
 
   const [file1, setFile1] = useState(null);
   const [file2, setFile2] = useState(null);
   const [file3, setFile3] = useState(null);
   const [file4, setFile4] = useState(null);
+  const [file5, setFile5] = useState(null);
+  const [file6, setFile6] = useState(null);
 
   const [error, setError] = useState("");
-
   const [outputImages, setOutputImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
@@ -159,15 +162,13 @@ export default function ProcessPage() {
   const [authorized, setAuthorized] = useState(false);
   const [preloading, setPreloading] = useState(true);
 
-  const [env, setEnv] = useState("dev"); // default dev
+  const [env, setEnv] = useState("dev");
   const { API_BASE, AUTH_TOKEN, USER_ID } = ENV_CONFIG[env];
 
   const normalizeHeight = (value, min, max) => {
     const raw = 0.4 + ((value - min) / (max - min)) * (1.0 - 0.4);
     return Math.round(raw * 10) / 10;
   };
-
-  const toggleEnv = () => setEnv(env === "dev" ? "prod" : "dev");
 
   const handleClear = useCallback(() => {
     setPrompt("");
@@ -176,10 +177,14 @@ export default function ProcessPage() {
     setHeight2(150);
     setHeight3(150);
     setHeight4(150);
+    setHeight5(150);
+    setHeight6(150);
     setFile1(null);
     setFile2(null);
     setFile3(null);
     setFile4(null);
+    setFile5(null);
+    setFile6(null);
     setOutputImages([]);
     setLoading(false);
     setProgress("");
@@ -196,7 +201,7 @@ export default function ProcessPage() {
   }, []);
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search); // client-side only
+    const searchParams = new URLSearchParams(window.location.search);
 
     const rawPrompt = searchParams.get("prompt") || "";
     const decodedPrompt = decodeURIComponent(rawPrompt);
@@ -211,7 +216,6 @@ export default function ProcessPage() {
     const fetchImage = async (url) => {
       const res = await fetch(url);
       const blob = await res.blob();
-      // create a name based on url so uploads have distinct names
       const name = url.split("/").pop().split("?")[0] || "input_from_group.jpg";
       return new File([blob], name, { type: blob.type });
     };
@@ -287,7 +291,7 @@ export default function ProcessPage() {
               50% { transform: translateX(0); }
               100% { transform: translateX(100%); }
             }
-            
+
             @keyframes fadeIn {
               from { opacity: 0; transform: scale(0.95); }
               to { opacity: 1; transform: scale(1); }
@@ -298,208 +302,207 @@ export default function ProcessPage() {
     );
   }
 
-const handleProcess = async () => {
+  const handleProcess = async () => {
+    const filesToUpload = [file1, file2, file3, file4, file5, file6].filter(Boolean);
 
-  if (!file1 || !file2) return alert("Please upload the first two images.");
-  setError("");
-
-
-  const filesToUpload = [file1, file2, file3, file4].filter(Boolean);
-
-  setLoading(true);
-  setOutputImages([]);
-  setTimings([]);
-  let stepTimings = [];
-
-  let processingStartTime = 0;
-
-  try {
-    const headers = {
-      Authorization: `Bearer ${AUTH_TOKEN}`,
-    };
-
-    // Step 1: Create group
-    let start = performance.now();
-    setProgress("Creating group...");
-    const groupRes = await axios.post(
-      `${API_BASE}/v2/group/create`,
-      null,
-      { params: { user_id: USER_ID }, headers }
-    );
-    const groupId = groupRes.data.groupId;
-    let end = performance.now();
-    stepTimings.push({
-      step: "Create group",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
-
-    // Step 2: Generate upload URLs
-    start = performance.now();
-    setProgress("Generating upload URLs...");
-    const uploads = await Promise.all(
-      filesToUpload.map(async (file) => {
-        const formData = new FormData();
-        formData.append("user_id", USER_ID.toString());
-        formData.append("filename", file.name);
-
-        const res = await axios.post(
-          `${API_BASE}/v2/uploads/generate-upload-url`,
-          formData,
-          { headers }
-        );
-        return res.data;
-      })
-    );
-    end = performance.now();
-    stepTimings.push({
-      step: "Generate upload URLs",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
-    const blobPaths = uploads.map((u) => u.blob_path);
-
-    // Step 3: Upload images
-    start = performance.now();
-    setProgress("Uploading images...");
-    await Promise.all(
-      uploads.map((u, i) =>
-        fetch(u.upload_url, {
-          method: "PUT",
-          headers: {
-            "x-ms-blob-type": "BlockBlob",
-            "Content-Type": filesToUpload[i].type,
-          },
-          body: filesToUpload[i],
-        })
-      )
-    );
-    end = performance.now();
-    stepTimings.push({
-      step: "Upload images",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
-
-    // Step 4: Finalize uploads
-    start = performance.now();
-    setProgress("Finalizing uploads...");
-    const finalizeForm = new FormData();
-    blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
-    finalizeForm.append("user_id", USER_ID.toString());
-    finalizeForm.append("group_id", groupId.toString());
-
-    await axios.post(
-      `${API_BASE}/v2/uploads/uploads-complete`,
-      finalizeForm,
-      { headers }
-    );
-    end = performance.now();
-    stepTimings.push({
-      step: "Finalize uploads",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
-
-    // Step 5: Start processing
-    start = performance.now();
-    setProgress("Starting processing...");
-    const normalizedHeights = [
-      normalizeHeight(height1, 140, 160),
-      normalizeHeight(height2, 140, 160),
-      normalizeHeight(height3, 140, 160),
-      normalizeHeight(height4, 140, 160),
-    ].slice(0, filesToUpload.length); // only for uploaded files
-
-    const promptToSend = displayPrompt.trim() || prompt;
-
-    const processRes = await axios.post(
-      `${API_BASE}/v2/process/groups/${groupId}`,
-      {
-        prompt: promptToSend,
-        mode: "full_body",
-        generations: filesToUpload.length, // match uploaded files
-        height_index_list: normalizedHeights,
-      },
-      { headers: { ...headers, "Content-Type": "application/json" } }
-    );
-
-    const reqIds = processRes.data.request_ids;
-    if (!reqIds || reqIds.length === 0)
-      throw new Error("No request IDs returned from processing API.");
-    end = performance.now();
-    stepTimings.push({
-      step: "Start processing",
-      time: ((end - start) / 1000).toFixed(2) + "s",
-    });
-
-    processingStartTime = performance.now();
-
-    setProgress("Processing images (may take a few minutes)...");
-    const pollStatus = async (reqIds) => {
-      try {
-        const params = new URLSearchParams();
-        reqIds.forEach((id) => params.append("request_ids", id));
-
-        const statusRes = await axios.get(
-          `${API_BASE}/process/status?${params.toString()}`,
-          {
-            headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-          }
-        );
-
-        const { status, outputs } = statusRes.data;
-
-        if (status === "done") {
-          const generationEnd = performance.now();
-          stepTimings.push({
-            step: "Pipeline Processing",
-            time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
-          });
-
-          const doneUrls = outputs
-            .filter((o) => o.status === "done" && o.url)
-            .map((o) => o.url);
-          setOutputImages(doneUrls);
-          setProgress("Processing complete.");
-          setLoading(false);
-          setTimings(stepTimings);
-        } else if (status === "error") {
-          setProgress("Error during processing. Try again.");
-          setLoading(false);
-        } else {
-          setTimeout(() => pollStatus(reqIds), 8000);
-        }
-      } catch (err) {
-        console.error("Polling error:", err);
-        setProgress("Polling encountered an error. Retrying...");
-        setTimeout(() => pollStatus(reqIds), 8000);
-      }
-    };
-    pollStatus(reqIds);
-  } catch (err) {
-    console.error(err);
-
-    let message = "Something went wrong. Please retry.";
-
-    if (axios.isAxiosError(err)) {
-      if (err.response) {
-        message = `Error ${err.response.status}: ${
-          err.response.data?.message || err.response.statusText
-        }`;
-      } else if (err.request) {
-        message = "Network error: No response from server.";
-      } else {
-        message = `Request error: ${err.message}`;
-      }
-    } else if (err instanceof Error) {
-      message = err.message;
+    if (filesToUpload.length < 2) {
+      return alert("Please upload at least 2 images.");
     }
 
-    setError(message);
-    setProgress("Something went wrong. Please retry.");
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    setOutputImages([]);
+    setTimings([]);
+    setError("");
+    let stepTimings = [];
+    let processingStartTime = 0;
 
+    try {
+      const headers = {
+        Authorization: `Bearer ${AUTH_TOKEN}`,
+      };
 
-  // --- Unauthorized Screen (Styled) ---
+      // Step 1: Create group
+      let start = performance.now();
+      setProgress("Creating group...");
+      const groupRes = await axios.post(
+        `${API_BASE}/v2/group/create`,
+        null,
+        { params: { user_id: USER_ID }, headers }
+      );
+      const groupId = groupRes.data.groupId;
+      let end = performance.now();
+      stepTimings.push({
+        step: "Create group",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
+
+      // Step 2: Generate upload URLs
+      start = performance.now();
+      setProgress("Generating upload URLs...");
+      const uploads = await Promise.all(
+        filesToUpload.map(async (file) => {
+          const formData = new FormData();
+          formData.append("user_id", USER_ID.toString());
+          formData.append("filename", file.name);
+
+          const res = await axios.post(
+            `${API_BASE}/v2/uploads/generate-upload-url`,
+            formData,
+            { headers }
+          );
+          return res.data;
+        })
+      );
+      end = performance.now();
+      stepTimings.push({
+        step: "Generate upload URLs",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
+      const blobPaths = uploads.map((u) => u.blob_path);
+
+      // Step 3: Upload images
+      start = performance.now();
+      setProgress("Uploading images...");
+      await Promise.all(
+        uploads.map((u, i) =>
+          fetch(u.upload_url, {
+            method: "PUT",
+            headers: {
+              "x-ms-blob-type": "BlockBlob",
+              "Content-Type": filesToUpload[i].type,
+            },
+            body: filesToUpload[i],
+          })
+        )
+      );
+      end = performance.now();
+      stepTimings.push({
+        step: "Upload images",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
+
+      // Step 4: Finalize uploads
+      start = performance.now();
+      setProgress("Finalizing uploads...");
+      const finalizeForm = new FormData();
+      blobPaths.forEach((path) => finalizeForm.append("blob_paths", path));
+      finalizeForm.append("user_id", USER_ID.toString());
+      finalizeForm.append("group_id", groupId.toString());
+
+      await axios.post(
+        `${API_BASE}/v2/uploads/uploads-complete`,
+        finalizeForm,
+        { headers }
+      );
+      end = performance.now();
+      stepTimings.push({
+        step: "Finalize uploads",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
+
+      // Step 5: Start processing
+      start = performance.now();
+      setProgress("Starting processing...");
+      const normalizedHeights = [
+        normalizeHeight(height1, 140, 160),
+        normalizeHeight(height2, 140, 160),
+        normalizeHeight(height3, 140, 160),
+        normalizeHeight(height4, 140, 160),
+        normalizeHeight(height5, 140, 160),
+        normalizeHeight(height6, 140, 160),
+      ].slice(0, filesToUpload.length);
+
+      const promptToSend = displayPrompt.trim() || prompt;
+
+      const processRes = await axios.post(
+        `${API_BASE}/v2/process/groups/${groupId}`,
+        {
+          prompt: promptToSend,
+          mode: "full_body",
+          generations: 4,
+          height_index_list: normalizedHeights,
+        },
+        { headers: { ...headers, "Content-Type": "application/json" } }
+      );
+
+      const reqIds = processRes.data.request_ids;
+      if (!reqIds || reqIds.length === 0)
+        throw new Error("No request IDs returned from processing API.");
+      end = performance.now();
+      stepTimings.push({
+        step: "Start processing",
+        time: ((end - start) / 1000).toFixed(2) + "s",
+      });
+
+      processingStartTime = performance.now();
+
+      setProgress("Processing images (may take a few minutes)...");
+      const pollStatus = async (reqIds) => {
+        try {
+          const params = new URLSearchParams();
+          reqIds.forEach((id) => params.append("request_ids", id));
+
+          const statusRes = await axios.get(
+            `${API_BASE}/process/status?${params.toString()}`,
+            {
+              headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+            }
+          );
+
+          const { status, outputs } = statusRes.data;
+
+          if (status === "done") {
+            const generationEnd = performance.now();
+            stepTimings.push({
+              step: "Pipeline Processing",
+              time: ((generationEnd - processingStartTime) / 1000).toFixed(2) + "s",
+            });
+
+            const doneUrls = outputs
+              .filter((o) => o.status === "done" && o.url)
+              .map((o) => o.url);
+            setOutputImages(doneUrls);
+            setProgress("Processing complete.");
+            setLoading(false);
+            setTimings(stepTimings);
+          } else if (status === "error") {
+            setProgress("Error during processing. Try again.");
+            setLoading(false);
+          } else {
+            setTimeout(() => pollStatus(reqIds), 8000);
+          }
+        } catch (err) {
+          console.error("Polling error:", err);
+          setProgress("Polling encountered an error. Retrying...");
+          setTimeout(() => pollStatus(reqIds), 8000);
+        }
+      };
+      pollStatus(reqIds);
+    } catch (err) {
+      console.error(err);
+
+      let message = "Something went wrong. Please retry.";
+
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          message = `Error ${err.response.status}: ${
+            err.response.data?.message || err.response.statusText
+          }`;
+        } else if (err.request) {
+          message = "Network error: No response from server.";
+        } else {
+          message = `Request error: ${err.message}`;
+        }
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+
+      setError(message);
+      setProgress("Something went wrong. Please retry.");
+      setLoading(false);
+    }
+  };
+
   if (!authorized) {
     return (
       <div
@@ -525,7 +528,8 @@ const handleProcess = async () => {
     );
   }
 
-  // --- Main Component Render (Styled) ---
+  const uploadedFileCount = [file1, file2, file3, file4, file5, file6].filter(Boolean).length;
+
   return (
     <div
       style={{
@@ -538,7 +542,6 @@ const handleProcess = async () => {
         fontFamily: "sans-serif",
       }}
     >
-      {/* --- Global animation styles --- */}
       <style>
         {`
           @keyframes fadeIn {
@@ -552,16 +555,54 @@ const handleProcess = async () => {
         style={{
           ...glassStyle,
           width: "100%",
-          maxWidth: "1000px",
+          maxWidth: "1400px",
           padding: "30px",
           color: TEXT_COLOR,
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "2fr 1fr",
           gap: "30px",
         }}
       >
-        {/* --- Left Column: Inputs --- */}
+        {/* Left Column: Inputs */}
         <div>
+          {/* Server Selection */}
+          <div style={{ marginBottom: "20px" }}>
+            <h2
+              style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                marginBottom: "10px",
+                color: ACCENT_COLOR,
+              }}
+            >
+              Server Selection
+            </h2>
+            <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+              {["dev", "staging", "prod"].map((serverEnv) => (
+                <label
+                  key={serverEnv}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="server"
+                    value={serverEnv}
+                    checked={env === serverEnv}
+                    onChange={(e) => setEnv(e.target.value)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  <span style={{ textTransform: "capitalize" }}>{serverEnv}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {error && (
             <div
               style={{
@@ -580,7 +621,7 @@ const handleProcess = async () => {
             </div>
           )}
 
-          {/* 1. Upload Images */}
+          {/* Upload Images */}
           <div style={{ marginBottom: "20px" }}>
             <h2
               style={{
@@ -590,19 +631,19 @@ const handleProcess = async () => {
                 color: ACCENT_COLOR,
               }}
             >
-              1. Upload Images
+              1. Upload Images ({uploadedFileCount}/6)
             </h2>
-
-            {/* 2x2 grid of upload boxes */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "15px" }}>
               <FileUploadCard label="Image 1" file={file1} setFile={setFile1} />
               <FileUploadCard label="Image 2" file={file2} setFile={setFile2} />
               <FileUploadCard label="Image 3" file={file3} setFile={setFile3} />
               <FileUploadCard label="Image 4" file={file4} setFile={setFile4} />
+              <FileUploadCard label="Image 5" file={file5} setFile={setFile5} />
+              <FileUploadCard label="Image 6" file={file6} setFile={setFile6} />
             </div>
           </div>
 
-          {/* 2. Prompt Section */}
+          {/* Prompt Section */}
           <div style={{ marginBottom: "20px" }}>
             <h2
               style={{
@@ -633,7 +674,7 @@ const handleProcess = async () => {
             />
           </div>
 
-          {/* 3. Height Adjustment Section */}
+          {/* Height Adjustment Section */}
           <div style={{ marginBottom: "25px" }}>
             <h2
               style={{
@@ -648,129 +689,48 @@ const handleProcess = async () => {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: "repeat(3, 1fr)",
                 gap: "15px",
               }}
             >
-              <div style={{ flex: 1 }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "5px",
-                    fontSize: "14px",
-                    color: TEXT_COLOR,
-                  }}
-                >
-                  Image 1:
-                </label>
-                <input
-                  type="number"
-                  value={height1}
-                  onChange={(e) => setHeight1(Number(e.target.value))}
-                  min="140"
-                  max="160"
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: "5px",
-                    border: `1px solid ${BORDER_COLOR}`,
-                    outline: "none",
-                    background: INPUT_BG,
-                    color: TEXT_COLOR,
-                    transition: "background 0.2s, border-color 0.2s",
-                  }}
-                />
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "5px",
-                    fontSize: "14px",
-                    color: TEXT_COLOR,
-                  }}
-                >
-                  Image 2:
-                </label>
-                <input
-                  type="number"
-                  value={height2}
-                  onChange={(e) => setHeight2(Number(e.target.value))}
-                  min="140"
-                  max="160"
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: "5px",
-                    border: `1px solid ${BORDER_COLOR}`,
-                    outline: "none",
-                    background: INPUT_BG,
-                    color: TEXT_COLOR,
-                    transition: "background 0.2s, border-color 0.2s",
-                  }}
-                />
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "5px",
-                    fontSize: "14px",
-                    color: TEXT_COLOR,
-                  }}
-                >
-                  Image 3:
-                </label>
-                <input
-                  type="number"
-                  value={height3}
-                  onChange={(e) => setHeight3(Number(e.target.value))}
-                  min="140"
-                  max="160"
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: "5px",
-                    border: `1px solid ${BORDER_COLOR}`,
-                    outline: "none",
-                    background: INPUT_BG,
-                    color: TEXT_COLOR,
-                    transition: "background 0.2s, border-color 0.2s",
-                  }}
-                />
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "5px",
-                    fontSize: "14px",
-                    color: TEXT_COLOR,
-                  }}
-                >
-                  Image 4:
-                </label>
-                <input
-                  type="number"
-                  value={height4}
-                  onChange={(e) => setHeight4(Number(e.target.value))}
-                  min="140"
-                  max="160"
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: "5px",
-                    border: `1px solid ${BORDER_COLOR}`,
-                    outline: "none",
-                    background: INPUT_BG,
-                    color: TEXT_COLOR,
-                    transition: "background 0.2s, border-color 0.2s",
-                  }}
-                />
-              </div>
+              {[
+                { label: "Image 1", value: height1, setter: setHeight1 },
+                { label: "Image 2", value: height2, setter: setHeight2 },
+                { label: "Image 3", value: height3, setter: setHeight3 },
+                { label: "Image 4", value: height4, setter: setHeight4 },
+                { label: "Image 5", value: height5, setter: setHeight5 },
+                { label: "Image 6", value: height6, setter: setHeight6 },
+              ].map((item, idx) => (
+                <div key={idx}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "5px",
+                      fontSize: "14px",
+                      color: TEXT_COLOR,
+                    }}
+                  >
+                    {item.label}:
+                  </label>
+                  <input
+                    type="number"
+                    value={item.value}
+                    onChange={(e) => item.setter(Number(e.target.value))}
+                    min="140"
+                    max="160"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "5px",
+                      border: `1px solid ${BORDER_COLOR}`,
+                      outline: "none",
+                      background: INPUT_BG,
+                      color: TEXT_COLOR,
+                      transition: "background 0.2s, border-color 0.2s",
+                    }}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
@@ -778,23 +738,25 @@ const handleProcess = async () => {
           <div style={{ display: "flex", gap: "10px" }}>
             <button
               onClick={handleProcess}
-              disabled={loading || !file1 || !file2}
+              disabled={loading || uploadedFileCount < 2}
               style={{
                 flex: 3,
                 padding: "12px",
                 borderRadius: "8px",
                 border: "none",
                 background:
-                  loading || !file1 || !file2
+                  loading || uploadedFileCount < 2
                     ? "rgba(100, 100, 100, 0.6)"
                     : ACCENT_COLOR,
-                color: loading || !file1 || !file2 ? "#aaa" : DARK_BG_COLOR,
+                color:
+                  loading || uploadedFileCount < 2 ? "#aaa" : DARK_BG_COLOR,
                 fontWeight: "700",
                 fontSize: "16px",
-                cursor: loading || !file1 || !file2 ? "not-allowed" : "pointer",
+                cursor:
+                  loading || uploadedFileCount < 2 ? "not-allowed" : "pointer",
                 transition: "0.2s",
                 boxShadow:
-                  loading || !file1 || !file2
+                  loading || uploadedFileCount < 2
                     ? "none"
                     : `0 0 15px ${ACCENT_COLOR}60`,
               }}
@@ -821,7 +783,7 @@ const handleProcess = async () => {
           </div>
         </div>
 
-        {/* --- Right Column: Output and Status --- */}
+        {/* Right Column: Output and Status */}
         <div>
           <h2
             style={{
@@ -833,12 +795,16 @@ const handleProcess = async () => {
               color: ACCENT_COLOR,
             }}
           >
-            Status & Output (USES DEV SERVER)
+            Status & Output
+            <div style={{
+              fontSize: "14px",
+              color: "#94a3b8",
+              marginTop: "5px",
+              textTransform: "uppercase"
+            }}>
+              Using {env} Server
+            </div>
           </h2>
-
-          <button onClick={toggleEnv} style={{ marginBottom: 12 }}>
-            Switch to {env === "dev" ? "Prod" : "Dev"}
-          </button>
 
           {/* Progress and Timings */}
           <div style={{ minHeight: "100px", marginBottom: "20px" }}>
