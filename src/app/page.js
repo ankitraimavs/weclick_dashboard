@@ -114,7 +114,7 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/dashboard/api/users/paid?limit=200`);
+      const res = await fetch(`${API_BASE}/dashboard/api/users/paid?limit=500`);
       if (!res.ok) throw new Error('Failed to fetch paid users');
       const data = await res.json();
       setPaidUsers(data.users || []);
@@ -412,18 +412,12 @@ export default function DashboardPage() {
                   <thead>
                     <tr style={{ backgroundColor: '#334155' }}>
                       <th style={{ padding: 10, textAlign: 'left' }}>Email</th>
-                      <th style={{ padding: 10, textAlign: 'left' }}>Name</th>
-                      <th style={{ padding: 10, textAlign: 'left' }}>Created At</th>
-                      <th style={{ padding: 10, textAlign: 'left' }}>Paid</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paidUsers.map((u) => (
                       <tr key={u.id} style={{ borderBottom: '1px solid #475569' }}>
                         <td style={{ padding: 10 }}>{u.email}</td>
-                        <td style={{ padding: 10 }}>{u.name || '—'}</td>
-                        <td style={{ padding: 10 }}>{u.created_at?.split('T')[0]}</td>
-                        <td style={{ padding: 10 }}>{u.is_paid ? '✅ Yes' : '❌ No'}</td>
                       </tr>
                     ))}
                   </tbody>
