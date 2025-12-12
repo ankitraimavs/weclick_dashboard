@@ -519,13 +519,30 @@ export default function GroupCard({ group, onDelete }) {
           {enhancedGroupPrompt && (
             <div style={promptStyle}>Enhanced Prompt: {enhancedGroupPrompt}</div>
           )}
-          <span style={qualityCheckStyle}>
-            {group.quality_summary
-              ? group.quality_summary
-                  .replace(/_/g, ' ')
-                  .replace(/\b\w/g, c => c.toUpperCase())
-              : 'No Quality Checker Data Available'}
-          </span>
+          {group.output_count < 4 && group.quality_summary && (
+            <div style={{
+              ...qualityCheckStyle,
+              background: 'rgba(13, 71, 3, 0.8)',
+              color: '#41fe34ff',
+              border: '1px solid rgba(39, 179, 11, 0.4)',
+            }}>
+              <strong>Quality Summary:</strong> {group.quality_summary
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase())}
+            </div>
+          )}
+          {group.output_count === 0 && group.pipeline_response && (
+            <div style={{
+              ...qualityCheckStyle,
+              background: 'rgba(127, 29, 29, 0.8)',
+              color: '#f87171',
+              border: '1px solid rgba(220, 38, 38, 0.4)',
+            }}>
+              <strong>Pipeline Response:</strong> {group.pipeline_response
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase())}
+            </div>
+          )}
           {renderImages('Input Images', group.input_images)}
           {group.output_images.length > 0 && <div style={dividerStyle}></div>}
           {renderSingleImage('Masked Image', group.mask_url)}
